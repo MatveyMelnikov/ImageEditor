@@ -5,10 +5,13 @@ import android.graphics.Bitmap;
 import androidx.core.util.Pair;
 
 public class ImageHandler {
+    public static int newPixelSideSize = 0;
     // Приблизительный размер большей стороны изображения на выходе
-    protected static int bigSideSize = 1040;
+    public static int bigSideSize = 1040;
+    // Альфа канал, который используется при сложении цветов
+    public static int defaultAlpha = 100;
     // Количество пикселей на большей стороне
-    protected static int pixelsInBigSide = 20;
+    protected static int pixelsInBigSide = 10;
 
     // Вычисляет точный размер итогового изображения
     // (большая сторона не всегда равна bigSideSize)
@@ -40,7 +43,7 @@ public class ImageHandler {
             g += (color >> 8) & 0xff;
             b += color & 0xff;
         }
-        return 0xff << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
+        return (defaultAlpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
     }
 
     // Возвращает пикселизированный bitmap маленького размера
@@ -114,7 +117,7 @@ public class ImageHandler {
                 bitmap.getWidth(),
                 bitmap.getHeight()
         );
-        int newPixelSideSize = (int)ratio;
+        newPixelSideSize = (int)ratio;
         Bitmap resultBitmap = Bitmap.createBitmap(
                 newSize.first,
                 newSize.second,
