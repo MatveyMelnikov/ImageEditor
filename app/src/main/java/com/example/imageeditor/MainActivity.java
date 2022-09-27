@@ -1,17 +1,23 @@
 package com.example.imageeditor;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.util.Pair;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 public class MainActivity extends AppCompatActivity {
     ImageView imageView;
     Bitmap currentBitmap;
+    ConstraintLayout.LayoutParams layoutParams;
+    float initialX = 0.0F, initialY = 0.0F;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -29,10 +35,46 @@ public class MainActivity extends AppCompatActivity {
         );
 
         imageView = (ImageView)findViewById(R.id.imageView);
+        layoutParams = (ConstraintLayout.LayoutParams)imageView.getLayoutParams();
+        //Object a = imageView.getLayoutParams();
+
         imageView.setImageBitmap(currentBitmap);
 
         imageView.setOnTouchListener((view, motionEvent) -> {
-            if (motionEvent.getAction() != MotionEvent.ACTION_DOWN)
+            // scroll
+            switch (motionEvent.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    initialX = motionEvent.getRawX();
+                    initialY = motionEvent.getRawY();
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    float offsetX = motionEvent.getRawX() - initialX;
+                    float offsetY = motionEvent.getRawY() - initialY;
+
+                    if (layoutParams.topMargin < -view.getHeight() * 1.75f &&
+                            offsetY < 0.0F)
+                        break;
+                    if (layoutParams.leftMargin < -view.getWidth() * 0.75f &&
+                            offsetX < 0.0F)
+                        break;
+                    if (layoutParams.topMargin > view.getHeight() * 1.75f &&
+                            offsetY > 0.0F)
+                        break;
+                    if (layoutParams.leftMargin > view.getWidth() * 0.75f &&
+                            offsetX > 0.0F)
+                        break;
+
+                    layoutParams.leftMargin = (int) (layoutParams.leftMargin + offsetX);
+                    layoutParams.topMargin = (int) (layoutParams.topMargin + offsetY);
+                    view.setLayoutParams(layoutParams);
+
+                    initialX = motionEvent.getRawX();
+                    initialY = motionEvent.getRawY();
+                    break;
+            }
+
+            // paint
+            /*if (motionEvent.getAction() != MotionEvent.ACTION_DOWN)
                 return true;
 
             int[] posXY = new int[2]; // top left corner
@@ -47,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
             activatePixel(currentBitmap, imageX, imageY);
             imageView.setImageBitmap(currentBitmap);
-
+            */
             return true;
         });
     }
