@@ -2,6 +2,8 @@ package com.example.imageeditor;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.view.MotionEvent;
@@ -143,25 +145,29 @@ public class ImageViewController {
     }
 
     protected static void activatePixel(Bitmap bitmap, int x, int y) {
+        int leftTopX = (x / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
+        int leftTopY = (y / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
+
         int color = bitmap.getPixel(
-                x,
-                y
+                leftTopX + ImageHandler.gridWidth,
+                leftTopY + ImageHandler.gridWidth
         );
         int r = (color >> 16) & 0xff;
         int g = (color >> 8) & 0xff;
         int b = color & 0xff;
         int activeColor = 0xff << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
 
-        int leftTopX = (int)(x / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
-        int leftTopY = (int)(y / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
-        for (int i = leftTopY;
-             i < leftTopY + ImageHandler.newPixelSideSize; i++)
-        {
-            for (int j = leftTopX;
-                 j < leftTopX + ImageHandler.newPixelSideSize; j++)
-            {
-                bitmap.setPixel(j, i, activeColor);
-            }
-        }
+        Paint paint = new Paint();
+        paint.setAntiAlias(false);
+        paint.setFilterBitmap(false);
+        paint.setColor(activeColor);
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawRect(
+                leftTopX + ImageHandler.gridWidth,
+                leftTopY + ImageHandler.gridWidth,
+                leftTopX + ImageHandler.newPixelSideSize,
+                leftTopY + ImageHandler.newPixelSideSize,
+                paint
+        );
     }
 }
