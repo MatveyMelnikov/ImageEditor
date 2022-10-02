@@ -2,6 +2,7 @@ package com.example.imageeditor;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BlendMode;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
@@ -28,6 +29,7 @@ public class ImageViewController {
     private final Point screenSize;
     // Image zoom multiplier
     private float factor = 1.0F;
+    private int currentAlpha = 255;
 
     public ImageViewController(
             Context context,
@@ -112,6 +114,13 @@ public class ImageViewController {
         imageView.setImageBitmap(currentBitmap);
     }
 
+    public void setMode(boolean isActivate) {
+        if (isActivate)
+            currentAlpha = 255;
+        else
+            currentAlpha = ImageHandler.defaultAlpha;
+    }
+
     private void controlBorders(View view) {
         if (view.getY() - initialPosition.y < -screenSize.y * 0.5F && offset.y < 0.0F)
             offset.y = 0.0F;
@@ -144,7 +153,7 @@ public class ImageViewController {
         }
     }
 
-    protected static void activatePixel(Bitmap bitmap, int x, int y) {
+    protected void activatePixel(Bitmap bitmap, int x, int y) {
         int leftTopX = (x / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
         int leftTopY = (y / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
 
@@ -155,12 +164,13 @@ public class ImageViewController {
         int r = (color >> 16) & 0xff;
         int g = (color >> 8) & 0xff;
         int b = color & 0xff;
-        int activeColor = 0xff << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
+        int activeColor = (currentAlpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
 
         Paint paint = new Paint();
         paint.setAntiAlias(false);
         paint.setFilterBitmap(false);
         paint.setColor(activeColor);
+        paint.setBlendMode(BlendMode.SRC);
         Canvas canvas = new Canvas(bitmap);
         canvas.drawRect(
                 leftTopX + ImageHandler.gridWidth,

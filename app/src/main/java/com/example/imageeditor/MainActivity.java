@@ -1,17 +1,13 @@
 package com.example.imageeditor;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 
 import android.annotation.SuppressLint;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.Point;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.MotionEvent;
-import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
 
@@ -37,23 +33,10 @@ public class MainActivity extends AppCompatActivity {
                 )
         );
 
-        //int a = getResources().getColor(R.color.black);
-
-        /*Bitmap bitmap = Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(getResources().getColor(R.color.white));
-        bitmap.setPixel(1, 1, getResources().getColor(R.color.black));
-        bitmap.setPixel(4, 4, getResources().getColor(R.color.black));
-
-        Paint paint = new Paint();
-        paint.setAntiAlias(false);
-        paint.setFilterBitmap(false);
-
-        Bitmap bitmap1 = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas();
-        canvas.setBitmap(bitmap1);
-        canvas.drawBitmap(bitmap, null, new Rect(0, 0, 1000, 1000), paint);
-        ImageView i = (ImageView)(findViewById(R.id.imageView));
-        i.setImageBitmap(bitmap1);*/
+        SwitchCompat switchButton = findViewById(R.id.switch1);
+        switchButton.setOnCheckedChangeListener((compoundButton, b) ->
+                imageViewController.setMode(b)
+        );
     }
 
     @Override
