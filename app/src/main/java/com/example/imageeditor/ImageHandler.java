@@ -118,25 +118,25 @@ public class ImageHandler {
         float[] lines = new float[bitmap.getWidth() * 4 + bitmap.getHeight() * 4];
         paint.setStrokeWidth(gridWidth);
 
-        // Horizontal lines
+        // Vertical lines
         int positionIndex = 1;
         for (int i = 0; i < bitmap.getWidth() * 4; i += 4)
-        {
-            lines[i] = 0; // start x
-            lines[i + 1] = positionIndex * newPixelSideSize + gridWidth * 0.5F; // start y
-            lines[i + 2] = newSize.x - 1; // end x
-            lines[i + 3] = positionIndex * newPixelSideSize + gridWidth * 0.5F; // end y
-            positionIndex++;
-        }
-
-        // Vertical lines
-        positionIndex = 1;
-        for (int i = bitmap.getWidth() * 4; i < lines.length; i += 4)
         {
             lines[i] = positionIndex * newPixelSideSize + gridWidth * 0.5F; // start x
             lines[i + 1] = 0; // start y
             lines[i + 2] = positionIndex * newPixelSideSize + gridWidth * 0.5F; // end x
             lines[i + 3] = newSize.y - 1; // end y
+            positionIndex++;
+        }
+
+        // Horizontal lines
+        positionIndex = 1;
+        for (int i = bitmap.getWidth() * 4; i < lines.length; i += 4)
+        {
+            lines[i] = 0; // start x
+            lines[i + 1] = positionIndex * newPixelSideSize + gridWidth * 0.5F; // start y
+            lines[i + 2] = newSize.x - 1; // end x
+            lines[i + 3] = positionIndex * newPixelSideSize + gridWidth * 0.5F; // end y
             positionIndex++;
         }
         canvas.drawLines(lines, paint);

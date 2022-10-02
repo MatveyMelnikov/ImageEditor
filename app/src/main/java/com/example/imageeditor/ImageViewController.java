@@ -15,6 +15,7 @@ import android.widget.ImageView;
 import java.lang.ref.WeakReference;
 
 public class ImageViewController {
+    private final int STACK_SIZE = 10;
     private final WeakReference<ImageView> imageViewReference;
     private final Bitmap currentBitmap;
     private ScaleGestureDetector scaleGestureDetector;
@@ -30,6 +31,7 @@ public class ImageViewController {
     // Image zoom multiplier
     private float factor = 1.0F;
     private int currentAlpha = 255;
+    private ActionsStack actionsStack;
 
     public ImageViewController(
             Context context,
@@ -69,6 +71,8 @@ public class ImageViewController {
         );
 
         imageView.setImageBitmap(currentBitmap);
+
+        actionsStack = new ActionsStack(STACK_SIZE);
     }
 
     public void onTouchEvent(MotionEvent event) {
@@ -110,8 +114,15 @@ public class ImageViewController {
                 imageY < 0 || imageY > imageView.getHeight())
             return;
 
-        activatePixel(currentBitmap, imageX, imageY);
-        imageView.setImageBitmap(currentBitmap);
+        activatePixel(imageView, currentBitmap, imageX, imageY, currentAlpha);
+        if (!actionsStack.isStartPosition())
+            actionsStack.clear();
+        // Add action to stack
+        actionsStack.push(new ImageAction(
+                imageX / ImageHandler.newPixelSideSize,
+                imageY / ImageHandler.newPixelSideSize,
+                currentAlpha == 255)
+        );
     }
 
     public void setMode(boolean isActivate) {
@@ -153,7 +164,7 @@ public class ImageViewController {
         }
     }
 
-    protected void activatePixel(Bitmap bitmap, int x, int y) {
+    protected void activatePixel(ImageView imageView, Bitmap bitmap, int x, int y, int alpha) {
         int leftTopX = (x / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
         int leftTopY = (y / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
 
@@ -164,7 +175,7 @@ public class ImageViewController {
         int r = (color >> 16) & 0xff;
         int g = (color >> 8) & 0xff;
         int b = color & 0xff;
-        int activeColor = (currentAlpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
+        int activeColor = (alpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
 
         Paint paint = new Paint();
         paint.setAntiAlias(false);
@@ -179,5 +190,40 @@ public class ImageViewController {
                 leftTopY + ImageHandler.newPixelSideSize,
                 paint
         );
+        imageView.setImageBitmap(currentBitmap);
+    }
+
+    public void undo() {
+        ImageAction imageAction = actionsStack.peekWithPosition();
+        ImageView imageView = imageViewReference.get();
+        if (imageView == null)
+            return;
+
+        if (imageAction != null) {
+            activatePixel(
+                    imageView,
+                    currentBitmap,
+                    imageAction.x * ImageHandler.newPixelSideSize,
+                    imageAction.y * ImageHandler.newPixelSideSize,
+                    imageAction.isActivated ? ImageHandler.defaultAlpha : 255
+            );
+        }
+    }
+
+    public void redo() {
+        ImageAction imageAction = actionsStack.reversePeekWithPosition();
+        ImageView imageView = imageViewReference.get();
+        if (imageView == null)
+            return;
+
+        if (imageAction != null) {
+            activatePixel(
+                    imageView,
+                    currentBitmap,
+                    imageAction.x * ImageHandler.newPixelSideSize,
+                    imageAction.y * ImageHandler.newPixelSideSize,
+                    imageAction.isActivated ? 255 : ImageHandler.defaultAlpha
+            );
+        }
     }
 }

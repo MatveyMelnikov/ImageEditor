@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.view.MotionEvent;
+import android.widget.Button;
 
 import java.lang.ref.WeakReference;
 
@@ -23,10 +24,10 @@ public class MainActivity extends AppCompatActivity {
         imageViewController = new ImageViewController(
                 this,
                 new WeakReference<>(findViewById(R.id.imageView)),
-                BitmapFactory.decodeResource(getResources(), R.drawable.example),
+                BitmapFactory.decodeResource(getResources(), R.drawable.example1),
                 getResources().getDisplayMetrics().widthPixels,
                 60,
-                20,
+                40,
                 new Point(
                         getResources().getDisplayMetrics().widthPixels,
                         getResources().getDisplayMetrics().heightPixels
@@ -36,6 +37,16 @@ public class MainActivity extends AppCompatActivity {
         SwitchCompat switchButton = findViewById(R.id.switch1);
         switchButton.setOnCheckedChangeListener((compoundButton, b) ->
                 imageViewController.setMode(b)
+        );
+
+        Button undoButton = findViewById(R.id.undoButton);
+        undoButton.setOnClickListener(
+                view -> imageViewController.undo()
+        );
+
+        Button redoButton = findViewById(R.id.redoButton);
+        redoButton.setOnClickListener(
+                view -> imageViewController.redo()
         );
     }
 
