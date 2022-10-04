@@ -32,6 +32,8 @@ public class ImageViewController {
     private float factor = 1.0F;
     private int currentAlpha = 255;
     private ActionsStack actionsStack;
+    // Needed for the same approximation at different image sizes
+    private final float scaleRatio;
 
     public ImageViewController(
             Context context,
@@ -42,12 +44,13 @@ public class ImageViewController {
             int pixelsInBigSide,
             Point screenSize
     ) {
-        // Устанавливаем итоговую ширину изображения в ширину экрана
+        // Set the final image width to the width of the screen
         ImageHandler.bigSideSize = bigSideSize;
         ImageHandler.defaultAlpha = defaultAlpha;
         ImageHandler.pixelsInBigSide = pixelsInBigSide;
         currentBitmap = ImageHandler.getExpandedBitmap(ImageHandler.getPixelatedBitmap(bitmap));
         this.screenSize = screenSize;
+        scaleRatio = ImageHandler.newPixelSideSize / 27.0F;
 
         this.imageViewReference = imageViewReference;
         ImageView imageView = imageViewReference.get();
@@ -58,8 +61,14 @@ public class ImageViewController {
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override
                     public boolean onScale(ScaleGestureDetector detector) {
-                        factor *= Math.max(0.95f, Math.min(1.05f, detector.getScaleFactor()));
-                        factor = Math.max(0.5f, Math.min(2.0f, factor));
+                        // Avoid double clicking
+                        if (detector.getCurrentSpan() < 300.0F ||
+                                detector.getPreviousSpan() < 300.0F)
+                            return super.onScale(detector);
+                        // Zoom speed limit
+                        factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
+                        // Zoom level control
+                        factor = Math.max(0.5f * scaleRatio, Math.min(2.5f * scaleRatio, factor));
                         ImageView imageView = imageViewReference.get();
 
                         imageView.setScaleX(factor);
@@ -109,10 +118,6 @@ public class ImageViewController {
         // Zoom does not affect on image view size
         int imageX = (int)((touchX - posXY[0]) / factor);
         int imageY = (int)((touchY - posXY[1]) / factor);
-
-        if (imageX < 0 || imageX > imageView.getWidth() ||
-                imageY < 0 || imageY > imageView.getHeight())
-            return;
 
         activatePixel(imageView, currentBitmap, imageX, imageY, currentAlpha);
         if (!actionsStack.isStartPosition())
@@ -167,6 +172,11 @@ public class ImageViewController {
     protected void activatePixel(ImageView imageView, Bitmap bitmap, int x, int y, int alpha) {
         int leftTopX = (x / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
         int leftTopY = (y / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
+
+        if (leftTopX < 0 || leftTopY < 0 ||
+                leftTopX + ImageHandler.gridWidth >bitmap.getWidth() ||
+                leftTopY + ImageHandler.gridWidth > bitmap.getHeight())
+            return;
 
         int color = bitmap.getPixel(
                 leftTopX + ImageHandler.gridWidth,

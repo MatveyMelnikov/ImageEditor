@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
         imageViewController = new ImageViewController(
                 this,
                 new WeakReference<>(findViewById(R.id.imageView)),
-                BitmapFactory.decodeResource(getResources(), R.drawable.example1),
+                BitmapFactory.decodeResource(getResources(), R.drawable.example2),
                 getResources().getDisplayMetrics().widthPixels,
                 60,
                 40,

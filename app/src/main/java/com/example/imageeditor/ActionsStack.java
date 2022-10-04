@@ -8,12 +8,8 @@ public class ActionsStack {
     public int currentIndex = -1;
 
     public ActionsStack(int fixedSize) {
-        stack = new Stack<ImageAction>();
+        stack = new Stack<>();
         this.fixedSize = fixedSize;
-    }
-
-    public ImageAction pop() {
-        return stack.pop();
     }
 
     public ImageAction peekWithPosition() {
