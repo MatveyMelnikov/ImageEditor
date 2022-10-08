@@ -7,48 +7,116 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.widget.ImageView;
+
+import androidx.annotation.Nullable;
 
 public class ImageHandler {
-    public static int newPixelSideSize = 0;
+    protected int newPixelSideSize;
     // Approximate size of the larger side of the final image
-    public static int bigSideSize = 1040;
+    protected int bigSideSize;
     // Alpha channel that is used when adding and getting colors
-    public static int defaultAlpha = 255;
+    protected int defaultAlpha;
     // The number of pixels on the larger side
-    public static int pixelsInBigSide = 10;
-    public static int gridWidth = 3;
+    protected int pixelsInBigSide;
+    protected int gridWidth;
+    protected Bitmap bitmap;
+    protected Paint paint;
+    protected Canvas canvas;
+
+    public ImageHandler(
+            Bitmap bitmap,
+            int bigSideSize,
+            int defaultAlpha,
+            int pixelsInBigSide,
+            int gridWidth
+    ) {
+        this.bigSideSize = bigSideSize;
+        this.defaultAlpha = defaultAlpha;
+        this.pixelsInBigSide = pixelsInBigSide;
+        this.gridWidth = gridWidth;
+
+        paint = new Paint();
+        paint.setAntiAlias(false);
+        paint.setFilterBitmap(false);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+        paint.setStrokeWidth(gridWidth);
+        this.bitmap = getExpandedBitmap(getPixelatedBitmap(bitmap));
+        canvas = new Canvas(this.bitmap);
+    }
+
+    public void setPixel(int x, int y, int color) {
+        int leftTopX = (x / newPixelSideSize) * newPixelSideSize;
+        int leftTopY = (y / newPixelSideSize) * newPixelSideSize;
+
+        if (leftTopX < 0 || leftTopY < 0 ||
+                leftTopX + gridWidth > bitmap.getWidth() ||
+                leftTopY + gridWidth > bitmap.getHeight())
+            return;
+
+        paint.setColor(color);
+
+        canvas.drawRect(
+                leftTopX + gridWidth,
+                leftTopY + gridWidth,
+                leftTopX + newPixelSideSize,
+                leftTopY + newPixelSideSize,
+                paint
+        );
+    }
+
+    @Nullable
+    public Integer getPixel(int x, int y) {
+        int leftTopX = (x / newPixelSideSize) * newPixelSideSize;
+        int leftTopY = (y / newPixelSideSize) * newPixelSideSize;
+
+        if (leftTopX < 0 || leftTopY < 0 ||
+                leftTopX + gridWidth > bitmap.getWidth() ||
+                leftTopY + gridWidth > bitmap.getHeight())
+            return null;
+
+        return bitmap.getPixel(leftTopX + gridWidth, leftTopY + gridWidth);
+    }
+
+    public int getPixelSideSize() {
+        return newPixelSideSize;
+    }
+
+    public int getDefaultAlpha() {
+        return defaultAlpha;
+    }
+
+    public int getBitmapWidth() {
+        return bitmap.getWidth();
+    }
+
+    public int getBitmapHeight() {
+        return bitmap.getHeight();
+    }
+
+    public void setBitmapToImageView(ImageView imageView) {
+        imageView.setImageBitmap(bitmap);
+    }
 
     // Calculates the exact size of the resulting image
     // (the big side of the final image is not always equal to bigSideSize)
-    protected static Point getBitmapSize(int width, int height) {
+    protected Point getBitmapSize(int width, int height) {
         int initialBigSideSize = Math.max(width, height);
         int ratio = bigSideSize / initialBigSideSize;
         return new Point(width * ratio, height * ratio);
     }
 
     // Gets the color in an int and multiplies it by the multiplier (needed to use weights)
-    protected static int getColorOnPosition(Bitmap bitmap, int x, int y, float multiplier) {
+    protected int getColorOnPosition(Bitmap bitmap, int x, int y) {
         int color = bitmap.getPixel(x, y);
-        int r = (int)(((color >> 16) & 0xff) * multiplier);
-        int g = (int)(((color >>  8) & 0xff) * multiplier);
-        int b = (int)((color & 0xff) * multiplier);
-        return (defaultAlpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
-    }
-
-    protected static int foldColors(int ... colors) {
-        int r = 0;
-        int g = 0;
-        int b = 0;
-        for (int color : colors) {
-            r += (color >> 16) & 0xff;
-            g += (color >> 8) & 0xff;
-            b += color & 0xff;
-        }
+        int r = (color >> 16) & 0xff;
+        int g = (color >>  8) & 0xff;
+        int b = color & 0xff;
         return (defaultAlpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
     }
 
     // Returns a small pixelated bitmap
-    public static Bitmap getPixelatedBitmap(Bitmap bitmap) {
+    protected Bitmap getPixelatedBitmap(Bitmap bitmap) {
         int initialBigSideSize = Math.max(bitmap.getHeight(), bitmap.getWidth());
         float ratio = (float)pixelsInBigSide / (float)initialBigSideSize;
         int initialPixelSideSize = (int)(1.0F / ratio);
@@ -76,8 +144,7 @@ public class ImageHandler {
                         getColorOnPosition(
                                 bitmap,
                                 leftUpCornerX + (int)(initialPixelSideSize * 0.5F),
-                                leftUpCornerY + (int)(initialPixelSideSize * 0.5F),
-                                1.0f
+                                leftUpCornerY + (int)(initialPixelSideSize * 0.5F)
                         )
                 );
             }
@@ -87,7 +154,7 @@ public class ImageHandler {
     }
 
     // Expands the pixel image to the length we specify
-    public static Bitmap getExpandedBitmap(Bitmap bitmap) {
+    protected Bitmap getExpandedBitmap(Bitmap bitmap) {
         int initialBigSideSize = Math.max(bitmap.getHeight(), bitmap.getWidth());
         if (initialBigSideSize > bigSideSize)
             return bitmap;
@@ -102,14 +169,8 @@ public class ImageHandler {
                 Bitmap.Config.ARGB_8888
         );
 
-        // Pixel bitmap extension
-        Paint paint = new Paint();
-        paint.setAntiAlias(false);
-        paint.setFilterBitmap(false);
-        //paint.setBlendMode(BlendMode.SRC);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
-        Canvas canvas = new Canvas(resultBitmap);
-        canvas.drawBitmap(
+        Canvas resultCanvas = new Canvas(resultBitmap);
+        resultCanvas.drawBitmap(
                 bitmap,
                 null,
                 new Rect(0, 0, newSize.x, newSize.y),
@@ -118,7 +179,6 @@ public class ImageHandler {
 
         // Grid drawing
         float[] lines = new float[bitmap.getWidth() * 4 + bitmap.getHeight() * 4];
-        paint.setStrokeWidth(gridWidth);
 
         // Vertical lines
         int positionIndex = 1;
@@ -141,7 +201,7 @@ public class ImageHandler {
             lines[i + 3] = positionIndex * newPixelSideSize + gridWidth * 0.5F; // end y
             positionIndex++;
         }
-        canvas.drawLines(lines, paint);
+        resultCanvas.drawLines(lines, paint);
 
         return resultBitmap;
     }

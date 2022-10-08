@@ -2,12 +2,8 @@ package com.example.imageeditor;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -16,9 +12,9 @@ import android.widget.ImageView;
 import java.lang.ref.WeakReference;
 
 public class ImageViewController {
+    ImageHandler imageHandler;
     private final int STACK_SIZE = 10;
     private final WeakReference<ImageView> imageViewReference;
-    private final Bitmap currentBitmap;
     private ScaleGestureDetector scaleGestureDetector;
     // The position from which the swipe starts
     private final PointF startPosition = new PointF(0.0F, 0.0F);
@@ -46,12 +42,15 @@ public class ImageViewController {
             Point screenSize
     ) {
         // Set the final image width to the width of the screen
-        ImageHandler.bigSideSize = bigSideSize;
-        ImageHandler.defaultAlpha = defaultAlpha;
-        ImageHandler.pixelsInBigSide = pixelsInBigSide;
-        currentBitmap = ImageHandler.getExpandedBitmap(ImageHandler.getPixelatedBitmap(bitmap));
         this.screenSize = screenSize;
-        scaleRatio = ImageHandler.newPixelSideSize / 27.0F;
+        imageHandler = new ImageHandler(
+                bitmap,
+                bigSideSize,
+                defaultAlpha,
+                pixelsInBigSide,
+                3
+        );
+        scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
 
         this.imageViewReference = imageViewReference;
         ImageView imageView = imageViewReference.get();
@@ -77,8 +76,7 @@ public class ImageViewController {
         );
         scaleGestureDetector.setQuickScaleEnabled(false);
 
-        imageView.setImageBitmap(currentBitmap);
-
+        imageHandler.setBitmapToImageView(imageView);
         actionsStack = new ActionsStack(STACK_SIZE);
     }
 
@@ -117,13 +115,13 @@ public class ImageViewController {
         int imageX = (int)((touchX - posXY[0]) / factor);
         int imageY = (int)((touchY - posXY[1]) / factor);
 
-        activatePixel(imageView, currentBitmap, imageX, imageY, currentAlpha);
+        activatePixel(imageView, imageX, imageY, currentAlpha);
         if (!actionsStack.isStartPosition())
             actionsStack.clear();
         // Add action to stack
         actionsStack.push(new ImageAction(
-                imageX / ImageHandler.newPixelSideSize,
-                imageY / ImageHandler.newPixelSideSize,
+                imageX / imageHandler.getPixelSideSize(),
+                imageY / imageHandler.getPixelSideSize(),
                 currentAlpha == 255)
         );
     }
@@ -132,7 +130,7 @@ public class ImageViewController {
         if (isActivate)
             currentAlpha = 255;
         else
-            currentAlpha = ImageHandler.defaultAlpha;
+            currentAlpha = imageHandler.getDefaultAlpha();
     }
 
     private void controlBorders(View view) {
@@ -142,12 +140,12 @@ public class ImageViewController {
         );
         // Distance from the center of the imageView to the edge of the screen
         PointF indent = new PointF(
-                (screenSize.x + currentBitmap.getWidth()) / 2.0F,
-                (screenSize.y + currentBitmap.getHeight()) / 2.0F
+                (screenSize.x + imageHandler.getBitmapWidth()) / 2.0F,
+                (screenSize.y + imageHandler.getBitmapHeight()) / 2.0F
         );
         PointF borders = new PointF(
-                0.2F * currentBitmap.getWidth() / factor,
-                0.2F * currentBitmap.getHeight() / factor
+                0.2F * imageHandler.getBitmapWidth() / factor,
+                0.2F * imageHandler.getBitmapHeight() / factor
         );
 
         if (leftCenter.y + indent.y < borders.y && offset.y < 0.0F)
@@ -184,38 +182,18 @@ public class ImageViewController {
         }
     }
 
-    protected void activatePixel(ImageView imageView, Bitmap bitmap, int x, int y, int alpha) {
-        int leftTopX = (x / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
-        int leftTopY = (y / ImageHandler.newPixelSideSize) * ImageHandler.newPixelSideSize;
-
-        if (leftTopX < 0 || leftTopY < 0 ||
-                leftTopX + ImageHandler.gridWidth >bitmap.getWidth() ||
-                leftTopY + ImageHandler.gridWidth > bitmap.getHeight())
+    protected void activatePixel(ImageView imageView, int x, int y, int alpha) {
+        Integer color = imageHandler.getPixel(x, y);
+        if (color == null)
             return;
 
-        int color = bitmap.getPixel(
-                leftTopX + ImageHandler.gridWidth,
-                leftTopY + ImageHandler.gridWidth
-        );
         int r = (color >> 16) & 0xff;
         int g = (color >> 8) & 0xff;
         int b = color & 0xff;
         int activeColor = (alpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
 
-        Paint paint = new Paint();
-        paint.setAntiAlias(false);
-        paint.setFilterBitmap(false);
-        paint.setColor(activeColor);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
-        Canvas canvas = new Canvas(bitmap);
-        canvas.drawRect(
-                leftTopX + ImageHandler.gridWidth,
-                leftTopY + ImageHandler.gridWidth,
-                leftTopX + ImageHandler.newPixelSideSize,
-                leftTopY + ImageHandler.newPixelSideSize,
-                paint
-        );
-        imageView.setImageBitmap(currentBitmap);
+        imageHandler.setPixel(x, y, activeColor);
+        imageHandler.setBitmapToImageView(imageView);
     }
 
     public void undo() {
@@ -227,10 +205,9 @@ public class ImageViewController {
         if (imageAction != null) {
             activatePixel(
                     imageView,
-                    currentBitmap,
-                    imageAction.x * ImageHandler.newPixelSideSize,
-                    imageAction.y * ImageHandler.newPixelSideSize,
-                    imageAction.isActivated ? ImageHandler.defaultAlpha : 255
+                    imageAction.x * imageHandler.getPixelSideSize(),
+                    imageAction.y * imageHandler.getPixelSideSize(),
+                    imageAction.isActivated ? imageHandler.defaultAlpha : 255
             );
         }
     }
@@ -244,10 +221,9 @@ public class ImageViewController {
         if (imageAction != null) {
             activatePixel(
                     imageView,
-                    currentBitmap,
-                    imageAction.x * ImageHandler.newPixelSideSize,
-                    imageAction.y * ImageHandler.newPixelSideSize,
-                    imageAction.isActivated ? 255 : ImageHandler.defaultAlpha
+                    imageAction.x * imageHandler.getPixelSideSize(),
+                    imageAction.y * imageHandler.getPixelSideSize(),
+                    imageAction.isActivated ? 255 : imageHandler.defaultAlpha
             );
         }
     }
