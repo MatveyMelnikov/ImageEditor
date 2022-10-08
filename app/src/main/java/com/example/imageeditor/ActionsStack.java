@@ -30,7 +30,7 @@ public class ActionsStack {
     }
 
     public boolean isStartPosition() {
-        return (currentIndex == (stack.size() - 1) || currentIndex == -1);
+        return (currentIndex == (stack.size() - 1));
     }
 
     public void push(ImageAction imageAction) {
