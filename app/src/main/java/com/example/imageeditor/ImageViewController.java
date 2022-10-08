@@ -140,14 +140,23 @@ public class ImageViewController {
                 view.getX() - initialPosition.x,
                 view.getY() - initialPosition.y
         );
+        // Distance from the center of the imageView to the edge of the screen
+        PointF indent = new PointF(
+                (screenSize.x + currentBitmap.getWidth()) / 2.0F,
+                (screenSize.y + currentBitmap.getHeight()) / 2.0F
+        );
+        PointF borders = new PointF(
+                0.2F * currentBitmap.getWidth() / factor,
+                0.2F * currentBitmap.getHeight() / factor
+        );
 
-        if (leftCenter.y < -screenSize.y * 0.5F && offset.y < 0.0F)
+        if (leftCenter.y + indent.y < borders.y && offset.y < 0.0F)
             offset.y = 0.0F;
-        if (leftCenter.x < -screenSize.x * 0.5F && offset.x < 0.0F)
+        if (leftCenter.x + indent.x < borders.x && offset.x < 0.0F)
             offset.x = 0.0F;
-        if (leftCenter.y > screenSize.y * 0.5f && offset.y > 0.0F)
+        if (leftCenter.y - indent.y > -borders.y && offset.y > 0.0F)
             offset.y = 0.0F;
-        if (leftCenter.x > screenSize.x * 0.5F && offset.x > 0.0F)
+        if (leftCenter.x - indent.x > -borders.x && offset.x > 0.0F)
             offset.x = 0.0F;
     }
 
