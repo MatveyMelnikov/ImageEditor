@@ -136,13 +136,18 @@ public class ImageViewController {
     }
 
     private void controlBorders(View view) {
-        if (view.getY() - initialPosition.y < -screenSize.y * 0.5F && offset.y < 0.0F)
+        PointF leftCenter = new PointF(
+                view.getX() - initialPosition.x,
+                view.getY() - initialPosition.y
+        );
+
+        if (leftCenter.y < -screenSize.y * 0.5F && offset.y < 0.0F)
             offset.y = 0.0F;
-        if (view.getX() - initialPosition.x < -screenSize.x * 0.5F && offset.x < 0.0F)
+        if (leftCenter.x < -screenSize.x * 0.5F && offset.x < 0.0F)
             offset.x = 0.0F;
-        if (view.getY() - initialPosition.y > screenSize.y * 0.5f && offset.y > 0.0F)
+        if (leftCenter.y > screenSize.y * 0.5f && offset.y > 0.0F)
             offset.y = 0.0F;
-        if (view.getX() - initialPosition.x > screenSize.x * 0.5F && offset.x > 0.0F)
+        if (leftCenter.x > screenSize.x * 0.5F && offset.x > 0.0F)
             offset.x = 0.0F;
     }
 
@@ -153,6 +158,9 @@ public class ImageViewController {
                 currentPosition.set(startPosition);
                 break;
             case MotionEvent.ACTION_MOVE:
+                // Prevent sharp movement when using multitouch
+                if (motionEvent.getPointerId(0) != 0)
+                    break;
                 offset.set(
                         motionEvent.getRawX() - currentPosition.x,
                         motionEvent.getRawY() - currentPosition.y

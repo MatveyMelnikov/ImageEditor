@@ -1,10 +1,11 @@
 package com.example.imageeditor;
 
 import android.graphics.Bitmap;
-import android.graphics.BlendMode;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 
 public class ImageHandler {
@@ -105,7 +106,8 @@ public class ImageHandler {
         Paint paint = new Paint();
         paint.setAntiAlias(false);
         paint.setFilterBitmap(false);
-        paint.setBlendMode(BlendMode.SRC);
+        //paint.setBlendMode(BlendMode.SRC);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
         Canvas canvas = new Canvas(resultBitmap);
         canvas.drawBitmap(
                 bitmap,
