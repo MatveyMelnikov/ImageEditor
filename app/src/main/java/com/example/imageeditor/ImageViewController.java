@@ -2,11 +2,12 @@ package com.example.imageeditor;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BlendMode;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -61,10 +62,6 @@ public class ImageViewController {
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override
                     public boolean onScale(ScaleGestureDetector detector) {
-                        // Avoid double clicking
-                        if (detector.getCurrentSpan() < 300.0F ||
-                                detector.getPreviousSpan() < 300.0F)
-                            return super.onScale(detector);
                         // Zoom speed limit
                         factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
                         // Zoom level control
@@ -78,6 +75,7 @@ public class ImageViewController {
                     }
                 }
         );
+        scaleGestureDetector.setQuickScaleEnabled(false);
 
         imageView.setImageBitmap(currentBitmap);
 
@@ -191,7 +189,7 @@ public class ImageViewController {
         paint.setAntiAlias(false);
         paint.setFilterBitmap(false);
         paint.setColor(activeColor);
-        paint.setBlendMode(BlendMode.SRC);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
         Canvas canvas = new Canvas(bitmap);
         canvas.drawRect(
                 leftTopX + ImageHandler.gridWidth,
