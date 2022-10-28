@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
+import java.util.HashSet;
 
 public class ImageViewController {
     ImageHandler imageHandler;
@@ -187,12 +188,7 @@ public class ImageViewController {
         if (color == null)
             return;
 
-        int r = (color >> 16) & 0xff;
-        int g = (color >> 8) & 0xff;
-        int b = color & 0xff;
-        int activeColor = (alpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
-
-        imageHandler.setPixel(x, y, activeColor);
+        imageHandler.setPixel(x, y, (alpha << 24) | (color & 0x00ffffff));
         imageHandler.setBitmapToImageView(imageView);
     }
 
@@ -226,5 +222,18 @@ public class ImageViewController {
                     imageAction.isActivated ? 255 : imageHandler.defaultAlpha
             );
         }
+    }
+
+    public void highLightAllPixelsWithColor(int color) {
+        ImageView imageView = imageViewReference.get();
+        if (imageView == null)
+            return;
+
+        imageHandler.highLightAllPixelsWithColor(color);
+        imageHandler.setBitmapToImageView(imageView);
+    }
+
+    public HashSet<Integer> getAllColors() {
+        return imageHandler.colors;
     }
 }

@@ -11,6 +11,8 @@ import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
 
+import java.util.HashSet;
+
 public class ImageHandler {
     protected int newPixelSideSize;
     // Approximate size of the larger side of the final image
@@ -23,6 +25,7 @@ public class ImageHandler {
     protected Bitmap bitmap;
     protected Paint paint;
     protected Canvas canvas;
+    public HashSet<Integer> colors;
 
     public ImageHandler(
             Bitmap bitmap,
@@ -41,6 +44,8 @@ public class ImageHandler {
         paint.setFilterBitmap(false);
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
         paint.setStrokeWidth(gridWidth);
+
+        colors = new HashSet<>();
         this.bitmap = getExpandedBitmap(getPixelatedBitmap(bitmap));
         canvas = new Canvas(this.bitmap);
     }
@@ -98,21 +103,46 @@ public class ImageHandler {
         imageView.setImageBitmap(bitmap);
     }
 
+    public void highLightAllPixelsWithColor(int color) {
+        int colorWithoutAlpha = color & 0x00ffffff;
+        // Desaturating the entire bitmap
+        int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
+        bitmap.getPixels(
+                pixels,
+                0,
+                bitmap.getWidth(),
+                0,
+                0,
+                bitmap.getWidth(), bitmap.getHeight()
+        );
+
+        // Leave the borders opaque and highlight the desired color
+        for (int i = 0; i < pixels.length; i++) {
+            // i % bitmap.getWidth() - x
+            // y = i / bitmap.getWidth() - y
+            if ((i % bitmap.getWidth()) % newPixelSideSize >= gridWidth &&
+                    (i / bitmap.getWidth()) % newPixelSideSize >= gridWidth) {
+                if ((pixels[i] & 0x00ffffff) == colorWithoutAlpha)
+                    pixels[i] = (255 << 24) | colorWithoutAlpha;
+                else
+                    pixels[i] = (defaultAlpha << 24) | (pixels[i] & 0x00ffffff);
+            }
+        }
+
+        bitmap.setPixels(pixels, 0,
+                bitmap.getWidth(),
+                0,
+                0,
+                bitmap.getWidth(), bitmap.getHeight()
+        );
+    }
+
     // Calculates the exact size of the resulting image
     // (the big side of the final image is not always equal to bigSideSize)
     protected Point getBitmapSize(int width, int height) {
         int initialBigSideSize = Math.max(width, height);
         int ratio = bigSideSize / initialBigSideSize;
         return new Point(width * ratio, height * ratio);
-    }
-
-    // Gets the color in an int and multiplies it by the multiplier (needed to use weights)
-    protected int getColorOnPosition(Bitmap bitmap, int x, int y) {
-        int color = bitmap.getPixel(x, y);
-        int r = (color >> 16) & 0xff;
-        int g = (color >>  8) & 0xff;
-        int b = color & 0xff;
-        return (defaultAlpha & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
     }
 
     // Returns a small pixelated bitmap
@@ -131,22 +161,19 @@ public class ImageHandler {
                 Bitmap.Config.ARGB_8888
         );
 
+        int halfOfInitialPixelSide = (int)(initialPixelSideSize * 0.5F);
         for (int y = 0; y < newSize.y; y++)
         {
             for (int x = 0; x < newSize.x; x++)
             {
-                int leftUpCornerX = x * initialPixelSideSize;
-                int leftUpCornerY = y * initialPixelSideSize;
+                // x * initialPixelSideSize - LeftUp corner X
+                // y * initialPixelSideSize - LeftUp corner Y
+                int color = bitmap.getPixel(
+                        (x * initialPixelSideSize) + halfOfInitialPixelSide,
+                        (y * initialPixelSideSize) + halfOfInitialPixelSide) & 0x00ffffff;
+                colors.add((255 << 24) | color);
 
-                resultBitmap.setPixel(
-                        x,
-                        y,
-                        getColorOnPosition(
-                                bitmap,
-                                leftUpCornerX + (int)(initialPixelSideSize * 0.5F),
-                                leftUpCornerY + (int)(initialPixelSideSize * 0.5F)
-                        )
-                );
+                resultBitmap.setPixel(x, y, (defaultAlpha << 24) | color);
             }
         }
 
