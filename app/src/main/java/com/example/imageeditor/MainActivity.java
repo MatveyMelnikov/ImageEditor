@@ -41,7 +41,6 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
         paint.setFilterBitmap(false);
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
 
-
         paint.setColor(Color.BLUE);
         canvas.drawRect(20, 0, 40, 20, paint);
         paint.setColor(Color.GREEN);

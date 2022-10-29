@@ -35,10 +35,6 @@ public class CustomRecyclerAdapter extends
         int color = colors.get(position);
 
         holder.pixel.setBackgroundColor(colors.get(position));
-        //holder.pixel.getLayoutParams().width = pixelWidth;
-        //holder.pixel.setBackgroundColor(0xFF00FF00);
-        //holder.pixel.invalidate();
-
         holder.pixel.setOnClickListener(
                 new View.OnClickListener() {
                     @Override

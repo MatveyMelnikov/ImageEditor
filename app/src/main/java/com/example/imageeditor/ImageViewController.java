@@ -28,7 +28,7 @@ public class ImageViewController {
     private final Point screenSize;
     // Image zoom multiplier
     private float factor = 1.0F;
-    private int currentAlpha = 255;
+    private boolean isActivating = true;
     private ActionsStack actionsStack;
     // Needed for the same approximation at different image sizes
     private final float scaleRatio;
@@ -65,7 +65,7 @@ public class ImageViewController {
                         // Zoom speed limit
                         factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
                         // Zoom level control
-                        factor = Math.max(0.5f * scaleRatio, Math.min(2.5f * scaleRatio, factor));
+                        factor = Math.max(0.5f * scaleRatio, Math.min(3.5f * scaleRatio, factor));
                         ImageView imageView = imageViewReference.get();
 
                         imageView.setScaleX(factor);
@@ -116,22 +116,23 @@ public class ImageViewController {
         int imageX = (int)((touchX - posXY[0]) / factor);
         int imageY = (int)((touchY - posXY[1]) / factor);
 
-        activatePixel(imageView, imageX, imageY, currentAlpha);
-        if (!actionsStack.isStartPosition())
-            actionsStack.clear();
-        // Add action to stack
-        actionsStack.push(new ImageAction(
-                imageX / imageHandler.getPixelSideSize(),
-                imageY / imageHandler.getPixelSideSize(),
-                currentAlpha == 255)
-        );
+        if (activatePixel(imageX, imageY, isActivating)) {
+            imageHandler.setBitmapToImageView(imageView);
+
+            if (!actionsStack.isStartPosition())
+                actionsStack.clear();
+            // Add action to stack
+            actionsStack.push(new ImageAction(
+                            imageX / imageHandler.getPixelSideSize(),
+                            imageY / imageHandler.getPixelSideSize(),
+                            isActivating
+                    )
+            );
+        }
     }
 
-    public void setMode(boolean isActivate) {
-        if (isActivate)
-            currentAlpha = 255;
-        else
-            currentAlpha = imageHandler.getDefaultAlpha();
+    public void setMode(boolean isActivating) {
+        this.isActivating = isActivating;
     }
 
     private void controlBorders(View view) {
@@ -183,13 +184,8 @@ public class ImageViewController {
         }
     }
 
-    protected void activatePixel(ImageView imageView, int x, int y, int alpha) {
-        Integer color = imageHandler.getPixel(x, y);
-        if (color == null)
-            return;
-
-        imageHandler.setPixel(x, y, (alpha << 24) | (color & 0x00ffffff));
-        imageHandler.setBitmapToImageView(imageView);
+    protected boolean activatePixel(int x, int y, boolean isActivated) {
+        return imageHandler.setPixel(x, y, isActivated);
     }
 
     public void undo() {
@@ -200,11 +196,11 @@ public class ImageViewController {
 
         if (imageAction != null) {
             activatePixel(
-                    imageView,
                     imageAction.x * imageHandler.getPixelSideSize(),
                     imageAction.y * imageHandler.getPixelSideSize(),
-                    imageAction.isActivated ? imageHandler.defaultAlpha : 255
+                    !imageAction.isActivated
             );
+            imageHandler.setBitmapToImageView(imageView);
         }
     }
 
@@ -216,11 +212,11 @@ public class ImageViewController {
 
         if (imageAction != null) {
             activatePixel(
-                    imageView,
                     imageAction.x * imageHandler.getPixelSideSize(),
                     imageAction.y * imageHandler.getPixelSideSize(),
-                    imageAction.isActivated ? 255 : imageHandler.defaultAlpha
+                    imageAction.isActivated
             );
+            imageHandler.setBitmapToImageView(imageView);
         }
     }
 
