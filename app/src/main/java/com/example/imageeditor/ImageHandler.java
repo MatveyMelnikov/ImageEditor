@@ -109,11 +109,13 @@ public class ImageHandler {
         int leftTopY = (y / newPixelSideSize) * newPixelSideSize;
 
         Integer color = getPixel(x, y);
+
         if (color == null)
             return false;
         else if (!isActivated && highlightedColor != null &&
                 getColorWithoutAlpha(highlightedColor) == getColorWithoutAlpha(color)) {
-            color = highlightedColor; // If there is a color highlight, then do not erase it
+            // If there is a color highlight, then do not erase it
+            color = getColor(highlightedColor, false);
         }
         else {
             color = getColor(color, !isActivated);
@@ -131,7 +133,7 @@ public class ImageHandler {
             printMark(x, y);
 
         activatedPixels[
-                (x / newPixelSideSize) + (y / newPixelSideSize) * pixelatedBitmap.getHeight()
+                (x / newPixelSideSize) + (y / newPixelSideSize) * pixelatedBitmap.getWidth()
                 ] = isActivated;
 
         return true;
@@ -143,8 +145,8 @@ public class ImageHandler {
         int convertedY = y / newPixelSideSize;
 
         if (convertedX < 0 || convertedY < 0 ||
-                convertedX > pixelatedBitmap.getWidth() ||
-                convertedY > pixelatedBitmap.getHeight())
+                convertedX >= pixelatedBitmap.getWidth() ||
+                convertedY >= pixelatedBitmap.getHeight())
             return null;
 
         return pixelatedBitmap.getPixel(convertedX, convertedY);
@@ -179,8 +181,9 @@ public class ImageHandler {
                 pixelatedBitmap.getWidth(), pixelatedBitmap.getHeight()
         );
 
-        boolean isClearingHighLight = highlightedColor != null && highlightedColor == color;
-            // Leave the borders opaque and highlight the desired color
+        // Whether to remove highlight
+        boolean isClearingHighLight = highlightedColor != null && highlightedColor == colorWithoutAlpha;
+        // Leave the borders opaque and highlight the desired color
         for (int i = 0; i < pixels.length; i++) {
             // i % bitmap.getWidth() - x
             // y = i / bitmap.getWidth() - y
@@ -204,10 +207,10 @@ public class ImageHandler {
             );
         }
 
-        if (highlightedColor != null && highlightedColor == color)
+        if (highlightedColor != null && highlightedColor == colorWithoutAlpha)
             highlightedColor = null;
         else
-            highlightedColor = color;
+            highlightedColor = colorWithoutAlpha;
     }
 
     // Calculates the exact size of the resulting image
@@ -245,9 +248,9 @@ public class ImageHandler {
                         (x * initialPixelSideSize) + halfOfInitialPixelSide,
                         (y * initialPixelSideSize) + halfOfInitialPixelSide
                 );
-                colors.add((255 << 24) | color);
 
                 resultBitmap.setPixel(x, y, getColor(color, true));
+                colors.add(getColor(resultBitmap.getPixel(x, y), false));
             }
         }
 
@@ -257,8 +260,6 @@ public class ImageHandler {
     // Expands the pixel image to the length we specify
     protected Bitmap getExpandedBitmap(Bitmap bitmap) {
         int initialBigSideSize = Math.max(bitmap.getHeight(), bitmap.getWidth());
-        if (initialBigSideSize > bigSideSize)
-            return bitmap;
 
         float ratio = (float)bigSideSize / (float)initialBigSideSize;
         newPixelSideSize = (int)ratio;

@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.LinearSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -30,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         // form test color image
         Bitmap bitmap = Bitmap.createBitmap(40, 40,
                 Bitmap.Config.ARGB_8888);
@@ -52,8 +54,8 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
         imageViewController = new ImageViewController(
                 this,
                 new WeakReference<>(findViewById(R.id.imageView)),
-                //BitmapFactory.decodeResource(getResources(), R.drawable.example_color),
-                bitmap,
+                BitmapFactory.decodeResource(getResources(), R.drawable.example1),
+                //bitmap,
                 getResources().getDisplayMetrics().widthPixels,
                 60,
                 40,

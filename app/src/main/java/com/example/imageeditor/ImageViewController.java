@@ -33,6 +33,9 @@ public class ImageViewController {
     // Needed for the same approximation at different image sizes
     private final float scaleRatio;
 
+    private final PointF scaleTarget = new PointF();
+    private float lastFactor = 1.0F;
+
     public ImageViewController(
             Context context,
             WeakReference<ImageView> imageViewReference,
@@ -62,14 +65,40 @@ public class ImageViewController {
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override
                     public boolean onScale(ScaleGestureDetector detector) {
+                        if (detector.getTimeDelta() == 0) {
+                            PointF viewCenter = new PointF(
+                                    imageView.getX() - initialPosition.x,
+                                    imageView.getY() - initialPosition.y
+                            );
+
+                            PointF focusCenter = new PointF(
+                                    detector.getFocusX() - screenSize.x * 0.5F,
+                                    detector.getFocusY() - screenSize.y * 0.5F
+                            );
+
+                            lastFactor = factor;
+                            // detector.getFocusX() - screenSize.x * 0.5F - focus X
+                            // detector.getFocusY() - screenSize.y * 0.5F - focus Y
+                            scaleTarget.set(
+                                    viewCenter.x - focusCenter.x,
+                                    viewCenter.y - focusCenter.y
+                            );
+                        }
+
                         // Zoom speed limit
                         factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
                         // Zoom level control
                         factor = Math.max(0.5f * scaleRatio, Math.min(3.5f * scaleRatio, factor));
-                        ImageView imageView = imageViewReference.get();
 
+                        ImageView imageView = imageViewReference.get();
                         imageView.setScaleX(factor);
                         imageView.setScaleY(factor);
+
+                        // Zoom motion
+                        float factorMultiplier = factor / lastFactor;
+
+                        imageView.setX(scaleTarget.x * factorMultiplier + initialPosition.x);
+                        imageView.setY(scaleTarget.y * factorMultiplier + initialPosition.y);
 
                         return super.onScale(detector);
                     }
@@ -136,27 +165,24 @@ public class ImageViewController {
     }
 
     private void controlBorders(View view) {
-        PointF leftCenter = new PointF(
+        PointF viewCenter = new PointF(
                 view.getX() - initialPosition.x,
                 view.getY() - initialPosition.y
         );
+
         // Distance from the center of the imageView to the edge of the screen
         PointF indent = new PointF(
-                (screenSize.x + imageHandler.getBitmapWidth()) / 2.0F,
-                (screenSize.y + imageHandler.getBitmapHeight()) / 2.0F
-        );
-        PointF borders = new PointF(
-                0.2F * imageHandler.getBitmapWidth() / factor,
-                0.2F * imageHandler.getBitmapHeight() / factor
+                screenSize.x * 0.5F + imageHandler.getBitmapWidth() * 0.25F * factor,
+                screenSize.y * 0.5F + imageHandler.getBitmapHeight() * 0.25F * factor
         );
 
-        if (leftCenter.y + indent.y < borders.y && offset.y < 0.0F)
+        if (viewCenter.y < -indent.y && offset.y < 0.0F)
             offset.y = 0.0F;
-        if (leftCenter.x + indent.x < borders.x && offset.x < 0.0F)
+        if (viewCenter.x < -indent.x && offset.x < 0.0F)
             offset.x = 0.0F;
-        if (leftCenter.y - indent.y > -borders.y && offset.y > 0.0F)
+        if (viewCenter.y > indent.y && offset.y > 0.0F)
             offset.y = 0.0F;
-        if (leftCenter.x - indent.x > -borders.x && offset.x > 0.0F)
+        if (viewCenter.x > indent.x && offset.x > 0.0F)
             offset.x = 0.0F;
     }
 
@@ -174,7 +200,6 @@ public class ImageViewController {
                         motionEvent.getRawX() - currentPosition.x,
                         motionEvent.getRawY() - currentPosition.y
                 );
-
                 controlBorders(view);
 
                 view.setX(view.getX() + offset.x);

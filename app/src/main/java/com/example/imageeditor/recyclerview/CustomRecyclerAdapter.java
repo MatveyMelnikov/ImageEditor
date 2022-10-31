@@ -32,18 +32,11 @@ public class CustomRecyclerAdapter extends
 
     @Override
     public void onBindViewHolder(@NonNull CustomViewHolder holder, int position) {
-        int color = colors.get(position);
-
         holder.pixel.setBackgroundColor(colors.get(position));
         holder.pixel.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        recyclerListener.onElementClick(
-                                ((ColorDrawable)view.getBackground()).getColor()
-                        );
-                    }
-                }
+                view -> recyclerListener.onElementClick(
+                        ((ColorDrawable)view.getBackground()).getColor()
+                )
         );
     }
 
