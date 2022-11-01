@@ -71,17 +71,12 @@ public class ImageViewController {
                                     imageView.getY() - initialPosition.y
                             );
 
-                            PointF focusCenter = new PointF(
-                                    detector.getFocusX() - screenSize.x * 0.5F,
-                                    detector.getFocusY() - screenSize.y * 0.5F
-                            );
-
                             lastFactor = factor;
                             // detector.getFocusX() - screenSize.x * 0.5F - focus X
                             // detector.getFocusY() - screenSize.y * 0.5F - focus Y
                             scaleTarget.set(
-                                    viewCenter.x - focusCenter.x,
-                                    viewCenter.y - focusCenter.y
+                                    viewCenter.x,
+                                    viewCenter.y
                             );
                         }
 
