@@ -30,11 +30,13 @@ public class ImageViewController {
     private float factor = 1.0F;
     private boolean isActivating = true;
     private ActionsStack actionsStack;
-    // Needed for the same approximation at different image sizes
+    // Needed for the same approximation at different image sizes (and pixelsInBigSide)
     private final float scaleRatio;
 
     private final PointF scaleTarget = new PointF();
     private float lastFactor = 1.0F;
+
+    private PointF scaleBorder = new PointF(0.5F, 3.5F);
 
     public ImageViewController(
             Context context,
@@ -54,7 +56,12 @@ public class ImageViewController {
                 pixelsInBigSide,
                 3
         );
+        //scaleRatio = imageHandler.getPixelSideSize() / 27.0F * (pixelsInBigSide / 40.0F);
         scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
+        scaleBorder.set(
+                scaleBorder.x * scaleRatio * (40.0F / pixelsInBigSide),
+                scaleBorder.y * scaleRatio * (pixelsInBigSide / 40.0F)
+        );
 
         this.imageViewReference = imageViewReference;
         ImageView imageView = imageViewReference.get();
@@ -66,24 +73,17 @@ public class ImageViewController {
                     @Override
                     public boolean onScale(ScaleGestureDetector detector) {
                         if (detector.getTimeDelta() == 0) {
-                            PointF viewCenter = new PointF(
+                            lastFactor = factor;
+                            scaleTarget.set(
                                     imageView.getX() - initialPosition.x,
                                     imageView.getY() - initialPosition.y
-                            );
-
-                            lastFactor = factor;
-                            // detector.getFocusX() - screenSize.x * 0.5F - focus X
-                            // detector.getFocusY() - screenSize.y * 0.5F - focus Y
-                            scaleTarget.set(
-                                    viewCenter.x,
-                                    viewCenter.y
                             );
                         }
 
                         // Zoom speed limit
                         factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
                         // Zoom level control
-                        factor = Math.max(0.5f * scaleRatio, Math.min(3.5f * scaleRatio, factor));
+                        factor = Math.max(scaleBorder.x, Math.min(scaleBorder.y, factor));
 
                         ImageView imageView = imageViewReference.get();
                         imageView.setScaleX(factor);
@@ -125,6 +125,7 @@ public class ImageViewController {
         if (event.getAction() != MotionEvent.ACTION_UP)
             return;
 
+        // Prevent pixel activation while scrolling
         if (Math.sqrt(Math.pow(currentPosition.x - startPosition.x, 2) +
                 Math.pow(currentPosition.y - startPosition.y, 2)) > 30.0F) {
             startPosition.set(currentPosition);
@@ -251,5 +252,15 @@ public class ImageViewController {
 
     public HashSet<Integer> getAllColors() {
         return imageHandler.colors;
+    }
+
+    public Bitmap getPixelatedBitmap()
+    {
+        return imageHandler.pixelatedBitmap;
+    }
+
+    public boolean[] getActivatedPixels()
+    {
+        return imageHandler.activatedPixels;
     }
 }

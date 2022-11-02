@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
                 //bitmap,
                 getResources().getDisplayMetrics().widthPixels,
                 60,
-                40,
+                80,
                 new Point(
                         getResources().getDisplayMetrics().widthPixels,
                         getResources().getDisplayMetrics().heightPixels
