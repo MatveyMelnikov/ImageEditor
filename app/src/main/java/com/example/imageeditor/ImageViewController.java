@@ -105,6 +105,74 @@ public class ImageViewController {
         actionsStack = new ActionsStack(STACK_SIZE);
     }
 
+    public ImageViewController(
+            Context context,
+            WeakReference<ImageView> imageViewReference,
+            Bitmap pixelatedBitmap,
+            boolean[] activatedPixels,
+            int bigSideSize,
+            int defaultAlpha,
+            Point screenSize
+    ) {
+        // Set the final image width to the width of the screen
+
+        this.screenSize = screenSize;
+        imageHandler = new ImageHandler(
+                pixelatedBitmap,
+                activatedPixels,
+                bigSideSize,
+                defaultAlpha,
+                3
+        );
+        int pixelsInBigSide = Math.max(pixelatedBitmap.getHeight(), pixelatedBitmap.getWidth());
+        scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
+        scaleBorder.set(
+                scaleBorder.x * scaleRatio * (40.0F / pixelsInBigSide),
+                scaleBorder.y * scaleRatio * (pixelsInBigSide / 40.0F)
+        );
+
+        this.imageViewReference = imageViewReference;
+        ImageView imageView = imageViewReference.get();
+        if (imageView == null)
+            return;
+
+        scaleGestureDetector = new ScaleGestureDetector(context,
+                new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                    @Override
+                    public boolean onScale(ScaleGestureDetector detector) {
+                        if (detector.getTimeDelta() == 0) {
+                            lastFactor = factor;
+                            scaleTarget.set(
+                                    imageView.getX() - initialPosition.x,
+                                    imageView.getY() - initialPosition.y
+                            );
+                        }
+
+                        // Zoom speed limit
+                        factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
+                        // Zoom level control
+                        factor = Math.max(scaleBorder.x, Math.min(scaleBorder.y, factor));
+
+                        ImageView imageView = imageViewReference.get();
+                        imageView.setScaleX(factor);
+                        imageView.setScaleY(factor);
+
+                        // Zoom motion
+                        float factorMultiplier = factor / lastFactor;
+
+                        imageView.setX(scaleTarget.x * factorMultiplier + initialPosition.x);
+                        imageView.setY(scaleTarget.y * factorMultiplier + initialPosition.y);
+
+                        return super.onScale(detector);
+                    }
+                }
+        );
+        scaleGestureDetector.setQuickScaleEnabled(false);
+
+        imageHandler.setBitmapToImageView(imageView);
+        actionsStack = new ActionsStack(STACK_SIZE);
+    }
+
     public void onTouchEvent(MotionEvent event) {
         ImageView imageView = imageViewReference.get();
         if (imageView == null)

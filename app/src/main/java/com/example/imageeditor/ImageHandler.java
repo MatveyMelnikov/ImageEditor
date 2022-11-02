@@ -57,6 +57,31 @@ public class ImageHandler {
         canvas = new Canvas(this.bitmap);
     }
 
+    public ImageHandler(
+            Bitmap pixelatedBitmap,
+            boolean[] activatedPixels,
+            int bigSideSize,
+            int defaultAlpha,
+            int gridWidth
+    ) {
+        this.bigSideSize = bigSideSize;
+        this.defaultAlpha = defaultAlpha;
+        this.gridWidth = gridWidth;
+
+        paint = new Paint();
+        paint.setAntiAlias(false);
+        paint.setFilterBitmap(false);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+        paint.setStrokeWidth(gridWidth);
+
+        colors = new HashSet<>();
+        this.activatedPixels = activatedPixels;
+        this.pixelatedBitmap = pixelatedBitmap;
+        this.bitmap = getExpandedBitmap(pixelatedBitmap);
+        canvas = new Canvas(this.bitmap);
+        printMarks();
+    }
+
     public void printMark(int x, int y)
     {
         // cross

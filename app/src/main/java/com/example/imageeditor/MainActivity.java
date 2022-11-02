@@ -51,6 +51,8 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
         canvas.drawRect(20, 20, 40, 40, paint);
         //
 
+        /*
+        // Loading images directly and from processing
         imageViewController = new ImageViewController(
                 this,
                 new WeakReference<>(findViewById(R.id.imageView)),
@@ -59,6 +61,25 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
                 getResources().getDisplayMetrics().widthPixels,
                 60,
                 80,
+                new Point(
+                        getResources().getDisplayMetrics().widthPixels,
+                        getResources().getDisplayMetrics().heightPixels
+                )
+        );*/
+
+        // Loading a pixelated image with an array of activated pixels without processing
+        boolean[] activatedPixels = new boolean[bitmap.getWidth() * bitmap.getHeight()];
+        activatedPixels[0] = true;
+        activatedPixels[33] = true;
+        activatedPixels[45] = true;
+
+        imageViewController = new ImageViewController(
+                this,
+                new WeakReference<>(findViewById(R.id.imageView)),
+                bitmap,
+                activatedPixels,
+                getResources().getDisplayMetrics().widthPixels,
+                60,
                 new Point(
                         getResources().getDisplayMetrics().widthPixels,
                         getResources().getDisplayMetrics().heightPixels
