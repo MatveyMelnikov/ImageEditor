@@ -36,7 +36,7 @@ public class ImageViewController {
     private final PointF scaleTarget = new PointF();
     private float lastFactor = 1.0F;
 
-    private PointF scaleBorder = new PointF(0.5F, 3.5F);
+    private final PointF scaleBorder = new PointF(0.5F, 3.5F);
 
     public ImageViewController(
             Context context,
@@ -56,7 +56,7 @@ public class ImageViewController {
                 pixelsInBigSide,
                 3
         );
-        //scaleRatio = imageHandler.getPixelSideSize() / 27.0F * (pixelsInBigSide / 40.0F);
+
         scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
         scaleBorder.set(
                 scaleBorder.x * scaleRatio * (40.0F / pixelsInBigSide),

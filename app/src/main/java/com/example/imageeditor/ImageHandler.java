@@ -78,8 +78,13 @@ public class ImageHandler {
         this.activatedPixels = activatedPixels;
         this.pixelatedBitmap = pixelatedBitmap;
         this.bitmap = getExpandedBitmap(pixelatedBitmap);
+
+        for (int y = 0; y < pixelatedBitmap.getWidth(); y++)
+            for (int x = 0; x < pixelatedBitmap.getHeight(); x++)
+                colors.add(getColor(pixelatedBitmap.getPixel(x, y), false));
+
         canvas = new Canvas(this.bitmap);
-        printMarks();
+        setActivatedPixels();
     }
 
     public void printMark(int x, int y)
@@ -107,16 +112,17 @@ public class ImageHandler {
         paint.setAntiAlias(false);
     }
 
-    protected void printMarks()
+    protected void setActivatedPixels()
     {
         for (int i = 0; i < activatedPixels.length; i++) {
             // i % pixelatedBitmap.getWidth() - x
             // i / pixelatedBitmap.getWidth() - y
             if (activatedPixels[i]) {
-                printMark(
+                setPixel(
                         i % pixelatedBitmap.getWidth() * newPixelSideSize,
-                        i / pixelatedBitmap.getWidth() * newPixelSideSize
-                        );
+                        i / pixelatedBitmap.getWidth() * newPixelSideSize,
+                        true
+                );
             }
         }
     }

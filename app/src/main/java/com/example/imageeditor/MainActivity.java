@@ -31,26 +31,6 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-        // form test color image
-        Bitmap bitmap = Bitmap.createBitmap(40, 40,
-                Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        bitmap.eraseColor(Color.RED);
-
-        Paint paint = new Paint();
-        paint.setAntiAlias(false);
-        paint.setFilterBitmap(false);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
-
-        paint.setColor(Color.BLUE);
-        canvas.drawRect(20, 0, 40, 20, paint);
-        paint.setColor(Color.GREEN);
-        canvas.drawRect(0, 20, 20, 40, paint);
-        paint.setColor(Color.MAGENTA);
-        canvas.drawRect(20, 20, 40, 40, paint);
-        //
-
         /*
         // Loading images directly and from processing
         imageViewController = new ImageViewController(
@@ -65,7 +45,27 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
                         getResources().getDisplayMetrics().widthPixels,
                         getResources().getDisplayMetrics().heightPixels
                 )
-        );*/
+        );
+         */
+
+        // form test color image
+        Bitmap bitmap = Bitmap.createBitmap(40, 40,
+                Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        bitmap.eraseColor((60 << 24) | (Color.RED & 0x00ffffff));
+
+        Paint paint = new Paint();
+        paint.setAntiAlias(false);
+        paint.setFilterBitmap(false);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+
+        paint.setColor((60 << 24) | (Color.BLUE & 0x00ffffff));
+        canvas.drawRect(20, 0, 40, 20, paint);
+        paint.setColor((60 << 24) | (Color.GREEN & 0x00ffffff));
+        canvas.drawRect(0, 20, 20, 40, paint);
+        paint.setColor((60 << 24) | (Color.MAGENTA & 0x00ffffff));
+        canvas.drawRect(20, 20, 40, 40, paint);
+        //
 
         // Loading a pixelated image with an array of activated pixels without processing
         boolean[] activatedPixels = new boolean[bitmap.getWidth() * bitmap.getHeight()];
@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
                         getResources().getDisplayMetrics().heightPixels
                 )
         );
+        ///
 
         SwitchCompat switchButton = findViewById(R.id.switch1);
         switchButton.setOnCheckedChangeListener((compoundButton, b) ->
