@@ -38,7 +38,8 @@ public class ImageHandler {
             int pixelsInBigSide,
             int gridWidth
     ) {
-        this.bigSideSize = bigSideSize;
+        this.bigSideSize = bigSideSize * pixelsInBigSide / 40;
+        //this.bigSideSize = bigSideSize;
         this.defaultAlpha = defaultAlpha;
         this.pixelsInBigSide = pixelsInBigSide;
         this.gridWidth = gridWidth;

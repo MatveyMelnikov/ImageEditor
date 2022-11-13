@@ -31,23 +31,22 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        /*
         // Loading images directly and from processing
         imageViewController = new ImageViewController(
                 this,
                 new WeakReference<>(findViewById(R.id.imageView)),
-                BitmapFactory.decodeResource(getResources(), R.drawable.example1),
+                BitmapFactory.decodeResource(getResources(), R.drawable.example_wide),
                 //bitmap,
                 getResources().getDisplayMetrics().widthPixels,
                 60,
-                80,
+                100,
                 new Point(
                         getResources().getDisplayMetrics().widthPixels,
                         getResources().getDisplayMetrics().heightPixels
                 )
         );
-         */
 
+        /*
         // form test color image
         Bitmap bitmap = Bitmap.createBitmap(40, 40,
                 Bitmap.Config.ARGB_8888);
@@ -86,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
                 )
         );
         ///
+         */
 
         SwitchCompat switchButton = findViewById(R.id.switch1);
         switchButton.setOnCheckedChangeListener((compoundButton, b) ->

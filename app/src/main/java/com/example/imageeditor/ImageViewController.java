@@ -2,6 +2,7 @@ package com.example.imageeditor;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.view.MotionEvent;
@@ -37,6 +38,8 @@ public class ImageViewController {
     private float lastFactor = 1.0F;
 
     private final PointF scaleBorder = new PointF(0.5F, 3.5F);
+    private PointF matrixOffset;
+    private float viewRatio;
 
     public ImageViewController(
             Context context,
@@ -59,8 +62,8 @@ public class ImageViewController {
 
         scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
         scaleBorder.set(
-                scaleBorder.x * scaleRatio * (40.0F / pixelsInBigSide),
-                scaleBorder.y * scaleRatio * (pixelsInBigSide / 40.0F)
+                scaleBorder.x * scaleRatio,
+                scaleBorder.y * scaleRatio
         );
 
         this.imageViewReference = imageViewReference;
@@ -180,8 +183,11 @@ public class ImageViewController {
 
         // The initial position of the view cannot be obtained in the OnCreate method,
         // so we get it when processing events
-        if (initialPosition == null)
+        if (initialPosition == null) {
             initialPosition = new PointF(imageView.getX(), imageView.getY());
+            matrixOffset = calculateMatrixOffset(imageView);
+            viewRatio = (float)imageHandler.getBitmapWidth() / imageView.getWidth();
+        }
 
         // scroll
         scrollImageView(imageView, event);
@@ -202,22 +208,23 @@ public class ImageViewController {
 
         int[] posXY = new int[2]; // top left corner
         imageView.getLocationInWindow(posXY);
-        int touchX = (int) event.getX();
-        int touchY = (int) event.getY();
 
         // Zoom does not affect on image view size
-        int imageX = (int)((touchX - posXY[0]) / factor);
-        int imageY = (int)((touchY - posXY[1]) / factor);
+        float imageX = (event.getX() - posXY[0]) / factor * viewRatio;
+        float imageY = (event.getY() - posXY[1]) / factor;
 
-        if (activatePixel(imageX, imageY, isActivating)) {
+        // Adjustment for large bitmaps
+        imageY = (imageY - matrixOffset.y) * viewRatio;
+
+        if (activatePixel((int)imageX, (int)imageY, isActivating)) {
             imageHandler.setBitmapToImageView(imageView);
 
             if (!actionsStack.isStartPosition())
                 actionsStack.clear();
             // Add action to stack
             actionsStack.push(new ImageAction(
-                            imageX / imageHandler.getPixelSideSize(),
-                            imageY / imageHandler.getPixelSideSize(),
+                    (int)imageX / imageHandler.getPixelSideSize(),
+                    (int)imageY / imageHandler.getPixelSideSize(),
                             isActivating
                     )
             );
@@ -330,5 +337,16 @@ public class ImageViewController {
     public boolean[] getActivatedPixels()
     {
         return imageHandler.activatedPixels;
+    }
+
+    protected PointF calculateMatrixOffset(ImageView imageView)
+    {
+        float[] values = new float[9];
+        imageView.getImageMatrix().getValues(values);
+
+        return new PointF(
+                values[Matrix.MTRANS_X],
+                values[Matrix.MTRANS_Y]
+        );
     }
 }
