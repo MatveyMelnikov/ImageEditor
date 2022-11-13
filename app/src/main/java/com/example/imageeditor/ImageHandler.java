@@ -15,9 +15,9 @@ import androidx.annotation.Nullable;
 import java.util.HashSet;
 
 public class ImageHandler {
-    public boolean[] activatedPixels;
-    public HashSet<Integer> colors;
-    public Bitmap pixelatedBitmap;
+    protected boolean[] activatedPixels;
+    protected HashSet<Integer> colors;
+    protected Bitmap pixelatedBitmap;
     protected int newPixelSideSize;
     // Approximate size of the larger side of the final image
     protected int bigSideSize;
@@ -111,6 +111,20 @@ public class ImageHandler {
         canvas.drawLines(lines, paint);
         paint.setStrokeWidth(gridWidth);
         paint.setAntiAlias(false);
+    }
+
+    public boolean[] getActivatedPixels()
+    {
+        return activatedPixels.clone();
+    }
+
+    @SuppressWarnings("unchecked")
+    public HashSet<Integer> getColors() {
+        return (HashSet<Integer>)colors.clone();
+    }
+
+    public Bitmap getPixelatedBitmap() {
+        return pixelatedBitmap.copy(pixelatedBitmap.getConfig(), false);
     }
 
     protected void setActivatedPixels()

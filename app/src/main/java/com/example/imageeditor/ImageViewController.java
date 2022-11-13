@@ -14,7 +14,7 @@ import java.lang.ref.WeakReference;
 import java.util.HashSet;
 
 public class ImageViewController {
-    ImageHandler imageHandler;
+    private ImageHandler imageHandler;
     private final int STACK_SIZE = 10;
     private final WeakReference<ImageView> imageViewReference;
     private ScaleGestureDetector scaleGestureDetector;
@@ -131,33 +131,6 @@ public class ImageViewController {
         actionsStack = new ActionsStack(STACK_SIZE);
     }
 
-    protected void OnScaleListener(ScaleGestureDetector detector)
-    {
-        ImageView imageView = imageViewReference.get();
-
-        if (detector.getTimeDelta() == 0) {
-            lastFactor = factor;
-            scaleTarget.set(
-                    imageView.getX() - initialPosition.x,
-                    imageView.getY() - initialPosition.y
-            );
-        }
-
-        // Zoom speed limit
-        factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
-        // Zoom level control
-        factor = Math.max(scaleBorder.x, Math.min(scaleBorder.y, factor));
-
-        imageView.setScaleX(factor);
-        imageView.setScaleY(factor);
-
-        // Zoom motion
-        float factorMultiplier = factor / lastFactor;
-
-        imageView.setX(scaleTarget.x * factorMultiplier + initialPosition.x);
-        imageView.setY(scaleTarget.y * factorMultiplier + initialPosition.y);
-    }
-
     public void onTouchEvent(MotionEvent event) {
         ImageView imageView = imageViewReference.get();
         if (imageView == null)
@@ -205,16 +178,98 @@ public class ImageViewController {
                 actionsStack.clear();
             // Add action to stack
             actionsStack.push(new ImageAction(
-                    (int)imageX / imageHandler.getPixelSideSize(),
-                    (int)imageY / imageHandler.getPixelSideSize(),
+                            (int)imageX / imageHandler.getPixelSideSize(),
+                            (int)imageY / imageHandler.getPixelSideSize(),
                             isActivating
                     )
             );
         }
     }
 
+    public void undo() {
+        ImageAction imageAction = actionsStack.peekWithPosition();
+        ImageView imageView = imageViewReference.get();
+        if (imageView == null)
+            return;
+
+        if (imageAction != null) {
+            activatePixel(
+                    imageAction.x * imageHandler.getPixelSideSize(),
+                    imageAction.y * imageHandler.getPixelSideSize(),
+                    !imageAction.isActivated
+            );
+            imageHandler.setBitmapToImageView(imageView);
+        }
+    }
+
+    public void redo() {
+        ImageAction imageAction = actionsStack.reversePeekWithPosition();
+        ImageView imageView = imageViewReference.get();
+        if (imageView == null)
+            return;
+
+        if (imageAction != null) {
+            activatePixel(
+                    imageAction.x * imageHandler.getPixelSideSize(),
+                    imageAction.y * imageHandler.getPixelSideSize(),
+                    imageAction.isActivated
+            );
+            imageHandler.setBitmapToImageView(imageView);
+        }
+    }
+
+    public void highLightAllPixelsWithColor(int color) {
+        ImageView imageView = imageViewReference.get();
+        if (imageView == null)
+            return;
+
+        imageHandler.highLightAllPixelsWithColor(color);
+        imageHandler.setBitmapToImageView(imageView);
+    }
+
+    public HashSet<Integer> getAllColors() {
+        return imageHandler.getColors();
+    }
+
+    public Bitmap getPixelatedBitmap()
+    {
+        return imageHandler.getPixelatedBitmap();
+    }
+
+    public boolean[] getActivatedPixels()
+    {
+        return imageHandler.getActivatedPixels();
+    }
+
     public void setMode(boolean isActivating) {
         this.isActivating = isActivating;
+    }
+
+    protected void OnScaleListener(ScaleGestureDetector detector)
+    {
+        ImageView imageView = imageViewReference.get();
+
+        if (detector.getTimeDelta() == 0) {
+            lastFactor = factor;
+            scaleTarget.set(
+                    imageView.getX() - initialPosition.x,
+                    imageView.getY() - initialPosition.y
+            );
+        }
+
+        // Zoom speed limit
+        factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
+        // Zoom level control
+        factor = Math.max(scaleBorder.x, Math.min(scaleBorder.y, factor));
+
+        imageView.setScaleX(factor);
+        imageView.setScaleY(factor);
+
+        // Zoom motion
+        float factorMultiplier = factor / lastFactor;
+
+        imageView.setX(scaleTarget.x * factorMultiplier + initialPosition.x);
+        imageView.setY(scaleTarget.y * factorMultiplier + initialPosition.y);
     }
 
     private void controlBorders(View view) {
@@ -264,61 +319,6 @@ public class ImageViewController {
 
     protected boolean activatePixel(int x, int y, boolean isActivated) {
         return imageHandler.setPixel(x, y, isActivated);
-    }
-
-    public void undo() {
-        ImageAction imageAction = actionsStack.peekWithPosition();
-        ImageView imageView = imageViewReference.get();
-        if (imageView == null)
-            return;
-
-        if (imageAction != null) {
-            activatePixel(
-                    imageAction.x * imageHandler.getPixelSideSize(),
-                    imageAction.y * imageHandler.getPixelSideSize(),
-                    !imageAction.isActivated
-            );
-            imageHandler.setBitmapToImageView(imageView);
-        }
-    }
-
-    public void redo() {
-        ImageAction imageAction = actionsStack.reversePeekWithPosition();
-        ImageView imageView = imageViewReference.get();
-        if (imageView == null)
-            return;
-
-        if (imageAction != null) {
-            activatePixel(
-                    imageAction.x * imageHandler.getPixelSideSize(),
-                    imageAction.y * imageHandler.getPixelSideSize(),
-                    imageAction.isActivated
-            );
-            imageHandler.setBitmapToImageView(imageView);
-        }
-    }
-
-    public void highLightAllPixelsWithColor(int color) {
-        ImageView imageView = imageViewReference.get();
-        if (imageView == null)
-            return;
-
-        imageHandler.highLightAllPixelsWithColor(color);
-        imageHandler.setBitmapToImageView(imageView);
-    }
-
-    public HashSet<Integer> getAllColors() {
-        return imageHandler.colors;
-    }
-
-    public Bitmap getPixelatedBitmap()
-    {
-        return imageHandler.pixelatedBitmap;
-    }
-
-    public boolean[] getActivatedPixels()
-    {
-        return imageHandler.activatedPixels;
     }
 
     protected PointF calculateMatrixOffset(ImageView imageView)
