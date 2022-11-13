@@ -200,6 +200,10 @@ public class ImageHandler {
         imageView.setImageBitmap(bitmap);
     }
 
+    public int getPixelsInBigSide() {
+        return pixelsInBigSide;
+    }
+
     public void highLightAllPixelsWithColor(int color) {
         int colorWithoutAlpha = getColorWithoutAlpha(color);
 

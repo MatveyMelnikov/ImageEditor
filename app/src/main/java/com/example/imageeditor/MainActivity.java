@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerListener 
         imageViewController = new ImageViewController(
                 this,
                 new WeakReference<>(findViewById(R.id.imageView)),
-                BitmapFactory.decodeResource(getResources(), R.drawable.example_wide),
+                BitmapFactory.decodeResource(getResources(), R.drawable.example),
                 //bitmap,
                 getResources().getDisplayMetrics().widthPixels,
                 60,

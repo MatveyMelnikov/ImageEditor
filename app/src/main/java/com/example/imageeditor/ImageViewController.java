@@ -37,10 +37,15 @@ public class ImageViewController {
     private final PointF scaleTarget = new PointF();
     private float lastFactor = 1.0F;
 
+    // Here the initial scale limits are set.
+    // Further, they are adjusted depending on the size of the bitmap.
     private final PointF scaleBorder = new PointF(0.5F, 3.5F);
     private PointF matrixOffset;
     private float viewRatio;
+    // Needed to correct large bitmaps that go beyond the scope of the image view
+    float sizeRatio = 1.0F;
 
+    // To load images from memory
     public ImageViewController(
             Context context,
             WeakReference<ImageView> imageViewReference,
@@ -59,12 +64,8 @@ public class ImageViewController {
                 pixelsInBigSide,
                 3
         );
-
         scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
-        scaleBorder.set(
-                scaleBorder.x * scaleRatio,
-                scaleBorder.y * scaleRatio
-        );
+        calculateScaleBorders(pixelsInBigSide);
 
         this.imageViewReference = imageViewReference;
         ImageView imageView = imageViewReference.get();
@@ -75,29 +76,7 @@ public class ImageViewController {
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override
                     public boolean onScale(ScaleGestureDetector detector) {
-                        if (detector.getTimeDelta() == 0) {
-                            lastFactor = factor;
-                            scaleTarget.set(
-                                    imageView.getX() - initialPosition.x,
-                                    imageView.getY() - initialPosition.y
-                            );
-                        }
-
-                        // Zoom speed limit
-                        factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
-                        // Zoom level control
-                        factor = Math.max(scaleBorder.x, Math.min(scaleBorder.y, factor));
-
-                        ImageView imageView = imageViewReference.get();
-                        imageView.setScaleX(factor);
-                        imageView.setScaleY(factor);
-
-                        // Zoom motion
-                        float factorMultiplier = factor / lastFactor;
-
-                        imageView.setX(scaleTarget.x * factorMultiplier + initialPosition.x);
-                        imageView.setY(scaleTarget.y * factorMultiplier + initialPosition.y);
-
+                        OnScaleListener(detector);
                         return super.onScale(detector);
                     }
                 }
@@ -108,6 +87,7 @@ public class ImageViewController {
         actionsStack = new ActionsStack(STACK_SIZE);
     }
 
+    // To directly load bitmaps from memory without processing
     public ImageViewController(
             Context context,
             WeakReference<ImageView> imageViewReference,
@@ -129,10 +109,7 @@ public class ImageViewController {
         );
         int pixelsInBigSide = Math.max(pixelatedBitmap.getHeight(), pixelatedBitmap.getWidth());
         scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
-        scaleBorder.set(
-                scaleBorder.x * scaleRatio * (40.0F / pixelsInBigSide),
-                scaleBorder.y * scaleRatio * (pixelsInBigSide / 40.0F)
-        );
+        calculateScaleBorders(pixelsInBigSide);
 
         this.imageViewReference = imageViewReference;
         ImageView imageView = imageViewReference.get();
@@ -143,29 +120,7 @@ public class ImageViewController {
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override
                     public boolean onScale(ScaleGestureDetector detector) {
-                        if (detector.getTimeDelta() == 0) {
-                            lastFactor = factor;
-                            scaleTarget.set(
-                                    imageView.getX() - initialPosition.x,
-                                    imageView.getY() - initialPosition.y
-                            );
-                        }
-
-                        // Zoom speed limit
-                        factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
-                        // Zoom level control
-                        factor = Math.max(scaleBorder.x, Math.min(scaleBorder.y, factor));
-
-                        ImageView imageView = imageViewReference.get();
-                        imageView.setScaleX(factor);
-                        imageView.setScaleY(factor);
-
-                        // Zoom motion
-                        float factorMultiplier = factor / lastFactor;
-
-                        imageView.setX(scaleTarget.x * factorMultiplier + initialPosition.x);
-                        imageView.setY(scaleTarget.y * factorMultiplier + initialPosition.y);
-
+                        OnScaleListener(detector);
                         return super.onScale(detector);
                     }
                 }
@@ -174,6 +129,33 @@ public class ImageViewController {
 
         imageHandler.setBitmapToImageView(imageView);
         actionsStack = new ActionsStack(STACK_SIZE);
+    }
+
+    protected void OnScaleListener(ScaleGestureDetector detector)
+    {
+        ImageView imageView = imageViewReference.get();
+
+        if (detector.getTimeDelta() == 0) {
+            lastFactor = factor;
+            scaleTarget.set(
+                    imageView.getX() - initialPosition.x,
+                    imageView.getY() - initialPosition.y
+            );
+        }
+
+        // Zoom speed limit
+        factor *= Math.max(0.95F, Math.min(1.05F, detector.getScaleFactor()));
+        // Zoom level control
+        factor = Math.max(scaleBorder.x, Math.min(scaleBorder.y, factor));
+
+        imageView.setScaleX(factor);
+        imageView.setScaleY(factor);
+
+        // Zoom motion
+        float factorMultiplier = factor / lastFactor;
+
+        imageView.setX(scaleTarget.x * factorMultiplier + initialPosition.x);
+        imageView.setY(scaleTarget.y * factorMultiplier + initialPosition.y);
     }
 
     public void onTouchEvent(MotionEvent event) {
@@ -243,8 +225,8 @@ public class ImageViewController {
 
         // Distance from the center of the imageView to the edge of the screen
         PointF indent = new PointF(
-                screenSize.x * 0.5F + imageHandler.getBitmapWidth() * 0.25F * factor,
-                screenSize.y * 0.5F + imageHandler.getBitmapHeight() * 0.25F * factor
+                screenSize.x * 0.5F + imageHandler.getBitmapWidth() * 0.25F * factor * sizeRatio,
+                screenSize.y * 0.5F + imageHandler.getBitmapHeight() * 0.25F * factor * sizeRatio
         );
 
         if (viewCenter.y < -indent.y && offset.y < 0.0F)
@@ -347,6 +329,18 @@ public class ImageViewController {
         return new PointF(
                 values[Matrix.MTRANS_X],
                 values[Matrix.MTRANS_Y]
+        );
+    }
+
+    protected void calculateScaleBorders(int pixelsInBigSide)
+    {
+        // If the bitmap goes beyond the image view, then we adjust by this ratio
+        if (screenSize.x < imageHandler.getBitmapWidth())
+            sizeRatio = 40.0F / (float)pixelsInBigSide;
+
+        scaleBorder.set(
+                scaleBorder.x * scaleRatio * sizeRatio,
+                scaleBorder.y * scaleRatio / sizeRatio
         );
     }
 }
