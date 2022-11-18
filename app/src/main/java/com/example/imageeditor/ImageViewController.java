@@ -188,25 +188,6 @@ public class ImageViewController {
             return;
         }
 
-        /*
-        int[] posXY = new int[2]; // top left corner
-        imageView.getLocationInWindow(posXY);
-
-        // Zoom does not affect on image view size
-        float imageX = (event.getX() - posXY[0]) / factor;
-        float imageY = (event.getY() - posXY[1]) / factor;
-
-        // Adjustment for large bitmaps
-        if (displaySidesRatio > 1.0F) {
-            // X side is bigger, so the width of the bitmap is
-            // equal to the width of the image view
-            imageX *= viewToBitmapRatio;
-            imageY = (imageY - matrixOffset.y) * viewToBitmapRatio;
-        } else {
-            imageX = (imageX - matrixOffset.x) * viewToBitmapRatio;
-            imageY *= viewToBitmapRatio;
-        }*/
-
         Point clickPoint = getCoordinatesOfClick(imageView, event);
 
         if (activatePixel(clickPoint.x, clickPoint.y, isActivating)) {
