@@ -39,17 +39,11 @@ public class ImageHandler {
             int gridWidth
     ) {
         this.bigSideSize = bigSideSize * pixelsInBigSide / 40;
-        //this.bigSideSize = bigSideSize;
         this.defaultAlpha = defaultAlpha;
         this.pixelsInBigSide = pixelsInBigSide;
         this.gridWidth = gridWidth;
 
-        paint = new Paint();
-        paint.setAntiAlias(false);
-        paint.setFilterBitmap(false);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
-        paint.setStrokeWidth(gridWidth);
-
+        prepareCanvas();
         colors = new HashSet<>();
         pixelatedBitmap = getPixelatedBitmap(bitmap);
         activatedPixels = new boolean[pixelatedBitmap.getWidth() *
@@ -69,12 +63,7 @@ public class ImageHandler {
         this.defaultAlpha = defaultAlpha;
         this.gridWidth = gridWidth;
 
-        paint = new Paint();
-        paint.setAntiAlias(false);
-        paint.setFilterBitmap(false);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
-        paint.setStrokeWidth(gridWidth);
-
+        prepareCanvas();
         colors = new HashSet<>();
         this.activatedPixels = activatedPixels;
         this.pixelatedBitmap = pixelatedBitmap;
@@ -111,111 +100,6 @@ public class ImageHandler {
         canvas.drawLines(lines, paint);
         paint.setStrokeWidth(gridWidth);
         paint.setAntiAlias(false);
-    }
-
-    public boolean[] getActivatedPixels()
-    {
-        return activatedPixels.clone();
-    }
-
-    @SuppressWarnings("unchecked")
-    public HashSet<Integer> getColors() {
-        return (HashSet<Integer>)colors.clone();
-    }
-
-    public Bitmap getPixelatedBitmap() {
-        return pixelatedBitmap.copy(pixelatedBitmap.getConfig(), false);
-    }
-
-    protected void setActivatedPixels()
-    {
-        for (int i = 0; i < activatedPixels.length; i++) {
-            // i % pixelatedBitmap.getWidth() - x
-            // i / pixelatedBitmap.getWidth() - y
-            if (activatedPixels[i]) {
-                setPixel(
-                        i % pixelatedBitmap.getWidth() * newPixelSideSize,
-                        i / pixelatedBitmap.getWidth() * newPixelSideSize,
-                        true
-                );
-            }
-        }
-    }
-
-    protected int getColorWithoutAlpha(int color) {
-        return color & 0x00ffffff;
-    }
-
-    protected int getColor(int color, boolean isTransparent) {
-        return ((isTransparent ? defaultAlpha : 255) << 24) | getColorWithoutAlpha(color);
-    }
-
-    public boolean setPixel(int x, int y, boolean isActivated) {
-        int leftTopX = (x / newPixelSideSize) * newPixelSideSize;
-        int leftTopY = (y / newPixelSideSize) * newPixelSideSize;
-
-        Integer color = getPixel(x, y);
-
-        if (color == null)
-            return false;
-        else if (!isActivated && highlightedColor != null &&
-                getColorWithoutAlpha(highlightedColor) == getColorWithoutAlpha(color)) {
-            // If there is a color highlight, then do not erase it
-            color = getColor(highlightedColor, false);
-        }
-        else {
-            color = getColor(color, !isActivated);
-        }
-        paint.setColor(color);
-
-        canvas.drawRect(
-                leftTopX + gridWidth,
-                leftTopY + gridWidth,
-                leftTopX + newPixelSideSize,
-                leftTopY + newPixelSideSize,
-                paint
-        );
-        if (isActivated)
-            printMark(x, y);
-
-        activatedPixels[
-                (x / newPixelSideSize) + (y / newPixelSideSize) * pixelatedBitmap.getWidth()
-                ] = isActivated;
-
-        return true;
-    }
-
-    @Nullable
-    protected Integer getPixel(int x, int y) {
-        int convertedX = x / newPixelSideSize;
-        int convertedY = y / newPixelSideSize;
-
-        if (convertedX < 0 || convertedY < 0 ||
-                convertedX >= pixelatedBitmap.getWidth() ||
-                convertedY >= pixelatedBitmap.getHeight())
-            return null;
-
-        return pixelatedBitmap.getPixel(convertedX, convertedY);
-    }
-
-    public int getPixelSideSize() {
-        return newPixelSideSize;
-    }
-
-    public int getBitmapWidth() {
-        return bitmap.getWidth();
-    }
-
-    public int getBitmapHeight() {
-        return bitmap.getHeight();
-    }
-
-    public void setBitmapToImageView(ImageView imageView) {
-        imageView.setImageBitmap(bitmap);
-    }
-
-    public int getPixelsInBigSide() {
-        return pixelsInBigSide;
     }
 
     public void highLightAllPixelsWithColor(int color) {
@@ -261,6 +145,120 @@ public class ImageHandler {
             highlightedColor = null;
         else
             highlightedColor = colorWithoutAlpha;
+    }
+
+    public boolean setPixel(int x, int y, boolean isActivated) {
+        int leftTopX = (x / newPixelSideSize) * newPixelSideSize;
+        int leftTopY = (y / newPixelSideSize) * newPixelSideSize;
+
+        Integer color = getPixel(x, y);
+
+        if (color == null)
+            return false;
+        else if (!isActivated && highlightedColor != null &&
+                getColorWithoutAlpha(highlightedColor) == getColorWithoutAlpha(color)) {
+            // If there is a color highlight, then do not erase it
+            color = getColor(highlightedColor, false);
+        }
+        else {
+            color = getColor(color, !isActivated);
+        }
+        paint.setColor(color);
+
+        canvas.drawRect(
+                leftTopX + gridWidth,
+                leftTopY + gridWidth,
+                leftTopX + newPixelSideSize,
+                leftTopY + newPixelSideSize,
+                paint
+        );
+        if (isActivated)
+            printMark(x, y);
+
+        activatedPixels[
+                (x / newPixelSideSize) + (y / newPixelSideSize) * pixelatedBitmap.getWidth()
+                ] = isActivated;
+
+        return true;
+    }
+
+    public boolean[] getActivatedPixels()
+    {
+        return activatedPixels.clone();
+    }
+
+    @SuppressWarnings("unchecked")
+    public HashSet<Integer> getColors() {
+        return (HashSet<Integer>)colors.clone();
+    }
+
+    public Bitmap getPixelatedBitmap() {
+        return pixelatedBitmap.copy(pixelatedBitmap.getConfig(), false);
+    }
+
+    public int getPixelSideSize() {
+        return newPixelSideSize;
+    }
+
+    public int getBitmapWidth() {
+        return bitmap.getWidth();
+    }
+
+    public int getBitmapHeight() {
+        return bitmap.getHeight();
+    }
+
+    public void setBitmapToImageView(ImageView imageView) {
+        imageView.setImageBitmap(bitmap);
+    }
+
+    public int getPixelsInBigSide() {
+        return pixelsInBigSide;
+    }
+
+    protected void prepareCanvas()
+    {
+        paint = new Paint();
+        paint.setAntiAlias(false);
+        paint.setFilterBitmap(false);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+        paint.setStrokeWidth(gridWidth);
+    }
+
+    protected void setActivatedPixels()
+    {
+        for (int i = 0; i < activatedPixels.length; i++) {
+            // i % pixelatedBitmap.getWidth() - x
+            // i / pixelatedBitmap.getWidth() - y
+            if (activatedPixels[i]) {
+                setPixel(
+                        i % pixelatedBitmap.getWidth() * newPixelSideSize,
+                        i / pixelatedBitmap.getWidth() * newPixelSideSize,
+                        true
+                );
+            }
+        }
+    }
+
+    protected int getColorWithoutAlpha(int color) {
+        return color & 0x00ffffff;
+    }
+
+    protected int getColor(int color, boolean isTransparent) {
+        return ((isTransparent ? defaultAlpha : 255) << 24) | getColorWithoutAlpha(color);
+    }
+
+    @Nullable
+    protected Integer getPixel(int x, int y) {
+        int convertedX = x / newPixelSideSize;
+        int convertedY = y / newPixelSideSize;
+
+        if (convertedX < 0 || convertedY < 0 ||
+                convertedX >= pixelatedBitmap.getWidth() ||
+                convertedY >= pixelatedBitmap.getHeight())
+            return null;
+
+        return pixelatedBitmap.getPixel(convertedX, convertedY);
     }
 
     // Calculates the exact size of the resulting image

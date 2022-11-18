@@ -14,7 +14,7 @@ import java.lang.ref.WeakReference;
 import java.util.HashSet;
 
 public class ImageViewController {
-    private ImageHandler imageHandler;
+    private final ImageHandler imageHandler;
     private final int STACK_SIZE = 10;
     private final WeakReference<ImageView> imageViewReference;
     private ScaleGestureDetector scaleGestureDetector;
@@ -33,7 +33,6 @@ public class ImageViewController {
     private ActionsStack actionsStack;
     // Needed for the same approximation at different image sizes (and pixelsInBigSide)
     private final float scaleRatio;
-
     private final PointF scaleTarget = new PointF();
     private float lastFactor = 1.0F;
 
@@ -41,9 +40,17 @@ public class ImageViewController {
     // Further, they are adjusted depending on the size of the bitmap.
     private final PointF scaleBorder = new PointF(0.5F, 3.5F);
     private PointF matrixOffset;
-    private float viewRatio;
+    // The ratio of the larger side of the bitmap to the corresponding side of the image view
+    private float viewToBitmapRatio;
     // Needed to correct large bitmaps that go beyond the scope of the image view
     float sizeRatio = 1.0F;
+    // The initial dimensions of the bitmap in the image view. It is calculated
+    // through the large side of the bitmap.
+    // It is necessary to calculate, since the size of the displayed bitmap is
+    // not equal to the size of the image view - its large side is stretched
+    // to the size of the corresponding side of the image view
+    PointF sizeOfDisplayBitmap;
+    float displaySidesRatio;
 
     // To load images from memory
     public ImageViewController(
@@ -66,6 +73,7 @@ public class ImageViewController {
         );
         scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
         calculateScaleBorders(pixelsInBigSide);
+        calculateSizeOfBitmapOnView();
 
         this.imageViewReference = imageViewReference;
         ImageView imageView = imageViewReference.get();
@@ -110,6 +118,21 @@ public class ImageViewController {
         int pixelsInBigSide = Math.max(pixelatedBitmap.getHeight(), pixelatedBitmap.getWidth());
         scaleRatio = imageHandler.getPixelSideSize() / 27.0F;
         calculateScaleBorders(pixelsInBigSide);
+        calculateSizeOfBitmapOnView();
+
+        if (imageHandler.getBitmapWidth() > imageHandler.getBitmapHeight()) {
+            sizeOfDisplayBitmap = new PointF(
+                    screenSize.x,
+                    screenSize.x * ((float)imageHandler.getBitmapHeight() /
+                            imageHandler.getBitmapWidth())
+            );
+        } else {
+            sizeOfDisplayBitmap = new PointF(
+                    screenSize.y * ((float)imageHandler.getBitmapWidth() /
+                            imageHandler.getBitmapHeight()),
+                    screenSize.y
+            );
+        }
 
         this.imageViewReference = imageViewReference;
         ImageView imageView = imageViewReference.get();
@@ -141,7 +164,11 @@ public class ImageViewController {
         if (initialPosition == null) {
             initialPosition = new PointF(imageView.getX(), imageView.getY());
             matrixOffset = calculateMatrixOffset(imageView);
-            viewRatio = (float)imageHandler.getBitmapWidth() / imageView.getWidth();
+            //viewRatio = (float)imageHandler.getBitmapWidth() / imageView.getWidth();
+            if (displaySidesRatio > 1.0F)
+                viewToBitmapRatio = (float)imageHandler.getBitmapWidth() / imageView.getWidth();
+            else
+                viewToBitmapRatio = (float)imageHandler.getBitmapHeight() / imageView.getHeight();
         }
 
         // scroll
@@ -161,25 +188,37 @@ public class ImageViewController {
             return;
         }
 
+        /*
         int[] posXY = new int[2]; // top left corner
         imageView.getLocationInWindow(posXY);
 
         // Zoom does not affect on image view size
-        float imageX = (event.getX() - posXY[0]) / factor * viewRatio;
+        float imageX = (event.getX() - posXY[0]) / factor;
         float imageY = (event.getY() - posXY[1]) / factor;
 
         // Adjustment for large bitmaps
-        imageY = (imageY - matrixOffset.y) * viewRatio;
+        if (displaySidesRatio > 1.0F) {
+            // X side is bigger, so the width of the bitmap is
+            // equal to the width of the image view
+            imageX *= viewToBitmapRatio;
+            imageY = (imageY - matrixOffset.y) * viewToBitmapRatio;
+        } else {
+            imageX = (imageX - matrixOffset.x) * viewToBitmapRatio;
+            imageY *= viewToBitmapRatio;
+        }*/
 
-        if (activatePixel((int)imageX, (int)imageY, isActivating)) {
+        Point clickPoint = getCoordinatesOfClick(imageView, event);
+
+        if (activatePixel(clickPoint.x, clickPoint.y, isActivating)) {
             imageHandler.setBitmapToImageView(imageView);
 
             if (!actionsStack.isStartPosition())
                 actionsStack.clear();
             // Add action to stack
-            actionsStack.push(new ImageAction(
-                            (int)imageX / imageHandler.getPixelSideSize(),
-                            (int)imageY / imageHandler.getPixelSideSize(),
+            actionsStack.push(
+                    new ImageAction(
+                            clickPoint.x / imageHandler.getPixelSideSize(),
+                            clickPoint.y / imageHandler.getPixelSideSize(),
                             isActivating
                     )
             );
@@ -280,8 +319,8 @@ public class ImageViewController {
 
         // Distance from the center of the imageView to the edge of the screen
         PointF indent = new PointF(
-                screenSize.x * 0.5F + imageHandler.getBitmapWidth() * 0.25F * factor * sizeRatio,
-                screenSize.y * 0.5F + imageHandler.getBitmapHeight() * 0.25F * factor * sizeRatio
+                sizeOfDisplayBitmap.x * 0.5F * factor,
+                sizeOfDisplayBitmap.y * 0.5F * factor
         );
 
         if (viewCenter.y < -indent.y && offset.y < 0.0F)
@@ -342,5 +381,38 @@ public class ImageViewController {
                 scaleBorder.x * scaleRatio * sizeRatio,
                 scaleBorder.y * scaleRatio / sizeRatio
         );
+    }
+
+    protected void calculateSizeOfBitmapOnView()
+    {
+        displaySidesRatio = (float)imageHandler.getBitmapWidth() /
+                imageHandler.getBitmapHeight();
+        if (displaySidesRatio > 1.0F)
+            sizeOfDisplayBitmap = new PointF(screenSize.x, screenSize.x / displaySidesRatio);
+        else
+            sizeOfDisplayBitmap = new PointF(screenSize.y * displaySidesRatio, screenSize.y);
+    }
+
+    protected Point getCoordinatesOfClick(ImageView imageView, MotionEvent event)
+    {
+        int[] posXY = new int[2]; // top left corner
+        imageView.getLocationInWindow(posXY);
+
+        // Zoom does not affect on image view size
+        float imageX = (event.getX() - posXY[0]) / factor;
+        float imageY = (event.getY() - posXY[1]) / factor;
+
+        // Adjustment for large bitmaps
+        if (displaySidesRatio > 1.0F) {
+            // X side is bigger, so the width of the bitmap is
+            // equal to the width of the image view
+            imageX *= viewToBitmapRatio;
+            imageY = (imageY - matrixOffset.y) * viewToBitmapRatio;
+        } else {
+            imageX = (imageX - matrixOffset.x) * viewToBitmapRatio;
+            imageY *= viewToBitmapRatio;
+        }
+
+        return new Point((int)imageX, (int)imageY);
     }
 }
